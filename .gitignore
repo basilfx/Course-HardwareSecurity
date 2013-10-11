@@ -4,3 +4,17 @@
 *.jar
 *.war
 *.ear
+
+# Eclipse
+.classpath
+.project
+*/.settings/*
+
+# Binaries
+Terminal/bin/*
+Smartcard/bin/*
+
+# OS files
+Thumb.db
+.DS_Store
+._*
