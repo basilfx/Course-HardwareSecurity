@@ -16,7 +16,7 @@ import javacardx.crypto.*;
  */
 public class RentalCarApplet extends Applet implements ISO7816
 {
-   private static final byte INS_SET_PUB_MODULUS = (byte)0x02;
+   private static final byte INS_SET_PUB_MODULUS = (byte)0x03;
    private static final byte INS_SET_PRIV_MODULUS = (byte)0x12;
    private static final byte INS_SET_PRIV_EXP = (byte)0x22;
    private static final byte INS_SET_PUB_EXP = (byte)0x32;

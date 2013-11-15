@@ -14,7 +14,7 @@ import java.security.interfaces.*;
 import javax.smartcardio.*;
 
 /**
- * Base class for the Terminal applets.
+ * Base class for the Terminal applications.
  * 
  * @author	Group 3
  */
@@ -50,8 +50,8 @@ public class BaseTerminal {
 			try {
 				TerminalFactory tf = TerminalFactory.getDefault();
 				CardTerminals ct = tf.terminals();
-				List<CardTerminal> cs = ct
-						.list(CardTerminals.State.CARD_PRESENT);
+				List<CardTerminal> cs = ct.list(CardTerminals.State.CARD_PRESENT);
+				
 				if (cs.isEmpty()) {
 					log("No terminals with a card found.");
 					return;
@@ -64,38 +64,44 @@ public class BaseTerminal {
 								try {
 									Card card = c.connect("*");
 									try {
+										// Select applet.
 										applet = card.getBasicChannel();
-										ResponseAPDU resp = applet
-												.transmit(SELECT_APDU);
+										ResponseAPDU resp = applet.transmit(SELECT_APDU);
+										
 										if (resp.getSW() != 0x9000) {
 											throw new Exception("Select failed");
 										}
 
 										// Wait for the card to be removed
-										while (c.isCardPresent())
-											;
+										while (c.isCardPresent()) {}
+										
 										break;
-									} catch (Exception e) {
-										log("Card does not contain CryptoApplet?!");
+									}
+									catch (Exception e) {
+										log("Card does not contain applet!");
 										sleep(2000);
 										continue;
 									}
-								} catch (CardException e) {
+								}
+								catch (CardException e) {
 									log("Couldn't connect to card!");
 									sleep(2000);
 									continue;
 								}
-							} else {
+							}
+							else {
 								log("No card present!");
 								sleep(2000);
 								continue;
 							}
 						}
-					} catch (CardException e) {
+					}
+					catch (CardException e) {
 						log("Card status problem!");
 					}
 				}
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				log("ERROR: " + e.getMessage());
 				e.printStackTrace();
 			}
@@ -134,11 +140,11 @@ public class BaseTerminal {
 	 * @throws CardTerminalException
 	 *             if something goes wrong.
 	 */
-	protected ResponseAPDU sendCommandAPDU(CommandAPDU capdu)
-			throws CardException {
+	protected ResponseAPDU sendCommandAPDU(CommandAPDU capdu) throws CardException {
 		log(capdu);
 		ResponseAPDU rapdu = applet.transmit(capdu);
 		log(rapdu);
+		
 		return rapdu;
 	}
 
@@ -147,6 +153,7 @@ public class BaseTerminal {
 		for(int i = 0; i < in.length; i++) {
 			out.append(String.format("%02x ", (in[i] & 0xFF)));
 		}
+		
 		return out.toString().toUpperCase();
 	}
 	
@@ -216,11 +223,13 @@ public class BaseTerminal {
 	 */
 	protected byte[] getBytes(BigInteger big) {
 		byte[] data = big.toByteArray();
+		
 		if (data[0] == 0) {
 			byte[] tmp = data;
 			data = new byte[tmp.length - 1];
 			System.arraycopy(tmp, 1, data, 0, tmp.length - 1);
 		}
+		
 		return data;
 	}
 
