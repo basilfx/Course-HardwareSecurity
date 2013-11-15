@@ -3,12 +3,16 @@ package com.rental.terminal;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.SashForm;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
@@ -96,10 +100,39 @@ public class TerminalChooser {
 			// Setup terminal tab
 			this.setupTerminal = new TabItem(this.folder, SWT.NULL);
 			this.setupTerminal.setText("Setup Terminal");
+						
+		    SashForm setupForm = new SashForm(folder, SWT.HORIZONTAL);
+		    Button reset = new Button(setupForm, SWT.PUSH);
+		    reset.setText("Reset");
+		    Button init = new Button(setupForm, SWT.PUSH);
+		    init.setText("Init");
+			this.setupTerminal.setControl(setupForm);
+			
+			
+			
+			Listener listener = new Listener(){
+				@Override
+				public void handleEvent(Event e) {
+					System.out.println();
+					addLogItem(e.widget.toString() + " pressed");
+					if(((Button)e.widget).getText() == "Reset"){
+						System.out.println("Reset die bitch");
+					}
+				}
+			};
+			init.addListener(SWT.Selection, listener);
+			reset.addListener(SWT.Selection, listener);
 			
 			// Desk terminal tab
 			this.deskTerminal = new TabItem(this.folder, SWT.NULL);
 			this.deskTerminal.setText("Desk Terminal");
+			
+			SashForm DeskForm= new SashForm(this.folder, SWT.BORDER);
+			Button ok = new Button(DeskForm, SWT.NULL);
+			ok.setText("OK");
+			this.deskTerminal.setControl(DeskForm);
+			
+			ok.addListener(SWT.Selection, listener);
 			
 			// Car terminal tab
 			this.carTerminal = new TabItem(this.folder, SWT.NULL);
@@ -132,6 +165,7 @@ public class TerminalChooser {
 		public void addLogItem(String message) {
 			this.log.add(message);
 		}
+		
 	}
 	
 	/**
