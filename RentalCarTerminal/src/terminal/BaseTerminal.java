@@ -41,7 +41,7 @@ public class BaseTerminal {
 	/**
 	 * Constructs the terminal application.
 	 */
-	public RentalCarTerminal() {
+	public BaseTerminal() {
 		(new CardThread()).start();
 	}
 
