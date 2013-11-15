@@ -10,7 +10,7 @@ import javacardx.crypto.*;
 /**
  * Class RentalCarApplet.
  *
- * @author Group 1?
+ * @author Group ?
  *
  * @version $Revision: 0.1 $
  */
