@@ -1,7 +1,6 @@
 *.class
 
 # Package Files #
-*.jar
 *.war
 *.ear
 
@@ -9,10 +8,7 @@
 .classpath
 .project
 */.settings/*
-
-# Binaries
-Terminal/bin/*
-Smartcard/bin/*
+*/bin/*
 
 # OS files
 Thumb.db
