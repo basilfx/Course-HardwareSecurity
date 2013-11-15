@@ -12,7 +12,7 @@ public class TerminalApplication {
 	private final static Logger LOGGER = Logger.getLogger(TerminalApplication.class.getName());
 	
 	/**
-	 * 
+	 * Main method
 	 * @param args
 	 */
 	public static void main(String[] args) {
