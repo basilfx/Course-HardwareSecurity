@@ -114,9 +114,9 @@ public class TerminalChooser {
 				@Override
 				public void handleEvent(Event e) {
 					System.out.println();
-					addLogItem(e.widget.toString() + " pressed");
+					addLogItem(((Button)e.widget).getText() + " pressed");
 					if(((Button)e.widget).getText() == "Reset"){
-						System.out.println("Reset die bitch");
+						//iets 
 					}
 				}
 			};
