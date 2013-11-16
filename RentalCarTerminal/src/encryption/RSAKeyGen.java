@@ -1,3 +1,5 @@
+package encryption;
+
 import java.io.*;
 import java.math.BigInteger;
 
@@ -15,7 +17,7 @@ public class RSAKeyGen
    /**
     * Generates an RSA public/private key pair.
     */
-   public RSAKeyGen() {
+   public RSAKeyGen(String public_key_filename, String private_key_filename) {
       try {
          /* Generate keypair. */
          System.out.println("Generating keys...");
@@ -26,10 +28,10 @@ public class RSAKeyGen
          RSAPrivateKey privatekey = (RSAPrivateKey)keypair.getPrivate();
 
          /* Write public key to file. */
-         writeKey(publickey, "publickey");
+         writeKey(publickey, public_key_filename);
 
          /* Write private key to file. */
-         writeKey(privatekey, "privatekey");
+         writeKey(privatekey, private_key_filename);
 
          System.out.println("modulus = " + publickey.getModulus());
          System.out.println("pubexpint = " + publickey.getPublicExponent());
@@ -59,8 +61,5 @@ public class RSAKeyGen
     *
     * @param arg The command line arguments.
     */
-   public static void main(String[] arg) {
-      new RSAKeyGen();
-   }
 }
 
