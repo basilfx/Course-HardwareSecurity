@@ -50,6 +50,8 @@ public class BaseTerminal extends JPanel {
 	byte[] current_smartcard_signature;
 	RSAPublicKey pubic_key_sc;
 	RSAHandler rsaHandler;
+	short tempNonce;
+
 
 
 

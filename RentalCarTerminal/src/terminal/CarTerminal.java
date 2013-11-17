@@ -42,7 +42,6 @@ public class CarTerminal extends BaseTerminal{
 
 	
 	/** Car terminal data */
-	short tempNonce;
 	boolean car_may_start = false;
 	int mileage;
 	RSAPublicKey public_key_ct;
