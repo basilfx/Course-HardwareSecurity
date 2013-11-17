@@ -16,6 +16,8 @@ import java.security.interfaces.*;
 
 import javax.smartcardio.*;
 
+import encryption.RSAHandler;
+
 /**
  * Base class for the Terminal applications.
  * 
@@ -37,6 +39,21 @@ public class BaseTerminal extends JPanel {
 	// States.
 	protected static final int STATE_INIT = 0;
 	protected static final int STATE_ISSUED = 1;
+	
+	
+	/** Keys Bytes */
+	private static final byte CLA_KEYS = (byte) 0xB7;
+	private static final byte KEYS_START = (byte) 0x01;
+	private static final byte GET_PUBLIC_KEY_MODULUS = (byte) 0x02;
+	private static final byte GET_PUBLIC_KEY_EXPONENT = (byte) 0x03;
+	
+	byte[] current_smartcard_signature;
+	RSAPublicKey pubic_key_sc;
+	RSAHandler rsaHandler;
+	short tempNonce;
+
+
+
 
 	// Last accessed directory of file browser.
 	private File currentDir = new File(".");
@@ -51,6 +68,7 @@ public class BaseTerminal extends JPanel {
 	 * Constructs the terminal application.
 	 */
 	public BaseTerminal() {
+		rsaHandler = new RSAHandler();
 		(new CardThread()).start();
 	}
 
@@ -115,6 +133,21 @@ public class BaseTerminal extends JPanel {
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	void getKeys() throws CardException, NoSuchAlgorithmException, InvalidKeySpecException{
+		CommandAPDU capdu = new CommandAPDU(CLA_KEYS, KEYS_START, (byte) 0, (byte) 0);
+		ResponseAPDU rapdu = sendCommandAPDU(capdu);
+		current_smartcard_signature = rapdu.getData();
+		
+		capdu = new CommandAPDU(CLA_KEYS, GET_PUBLIC_KEY_MODULUS, (byte) 0, (byte) 0);
+		rapdu = sendCommandAPDU(capdu);
+		byte[] modulus = rapdu.getData();
+		
+		capdu = new CommandAPDU(CLA_KEYS, GET_PUBLIC_KEY_EXPONENT, (byte) 0, (byte) 0);
+		rapdu = sendCommandAPDU(capdu);
+		byte[] exponent = rapdu.getData();
+		pubic_key_sc = rsaHandler.getPublicKeyFromModulusExponent(modulus, exponent);
 	}
 
 	/**

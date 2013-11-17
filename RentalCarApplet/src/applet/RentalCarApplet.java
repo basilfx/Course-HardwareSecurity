@@ -19,7 +19,7 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	private static final byte STATE_ISSUED = 1;
 
 	/** CLA BYTES: values between 0xB0 and CF can be used */
-
+	
 	/** Issue Bytes */
 	private static final byte CLA_ISSUE = (byte) 0xB1;
 	private static final byte SET_PUBLIC_KEY_SIGNATURE = (byte) 0x01;
@@ -34,19 +34,17 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	/** Init Bytes */
 	private static final byte CLA_INIT = (byte) 0xB2;
 	private static final byte INIT_START = (byte) 0x01;
-	private static final byte INIT_FIRST_NONCE = (byte) 0x02;
-	private static final byte INIT_AUTHENTICATED = (byte) 0x03;
-	private static final byte INIT_SECOND_NONCE = (byte) 0x04;
-	private static final byte INIT_SET_SIGNED_CAR_KEY_MODULUS = (byte) 0x05;
-	private static final byte INIT_SET_SIGNED_CAR_KEY_EXPONENT = (byte) 0x06;
-	private static final byte INIT_SET_SIGNED_ENCRYPTED_CAR_DATA = (byte) 0x07;
+	private static final byte INIT_AUTHENTICATED = (byte) 0x02;
+	private static final byte INIT_SECOND_NONCE = (byte) 0x03;
+	private static final byte INIT_SET_SIGNED_CAR_KEY_MODULUS = (byte) 0x04;
+	private static final byte INIT_SET_SIGNED_CAR_KEY_EXPONENT = (byte) 0x05;
+	private static final byte INIT_SET_SIGNED_ENCRYPTED_CAR_DATA = (byte) 0x06;
 
 	/** Read Bytes */
 	private static final byte CLA_READ = (byte) 0xB3;
-	private static final byte READ_MILEAGE_START = (byte) 0x01;
-	private static final byte READ_MILEAGE_SIGNED_NONCE = (byte) 0x02;
-	private static final byte READ_MILEAGE_START_MILEAGE = (byte) 0x03;
-	private static final byte READ_MILEAGE_FINAL_MILEAGE = (byte) 0x04;
+	private static final byte READ_MILEAGE_SIGNED_NONCE = (byte) 0x01;
+	private static final byte READ_MILEAGE_START_MILEAGE = (byte) 0x02;
+	private static final byte READ_MILEAGE_FINAL_MILEAGE = (byte) 0x03;
 
 	/** Reset Bytes */
 	private static final byte CLA_RESET = (byte) 0xB4;
@@ -54,16 +52,20 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 
 	/** Start Bytes */
 	private static final byte CLA_START = (byte) 0xB5;
-	private static final byte START_CAR = (byte) 0x01;
-	private static final byte GET_PUBLIC_KEY_MODULUS = (byte) 0x02;
-	private static final byte GET_PUBLIC_KEY_EXPONENT = (byte) 0x03;
-	private static final byte SET_START_MILEAGE = (byte) 0x04;
+	private static final byte SET_START_MILEAGE = (byte) 0x01;
 
 	/** Stop Bytes */
 	private static final byte CLA_STOP = (byte) 0xB6;
 	private static final byte STOP_CAR = (byte) 0x01;
 	private static final byte SET_FINAL_MILEAGE = (byte) 0x02;
-
+	
+	/** Keys Bytes */
+	private static final byte CLA_KEYS = (byte) 0xB7;
+	private static final byte KEYS_START = (byte) 0x01;
+	private static final byte GET_PUBLIC_KEY_MODULUS = (byte) 0x02;
+	private static final byte GET_PUBLIC_KEY_EXPONENT = (byte) 0x03;
+	
+	
 	/** Temporary buffer in RAM. */
 	byte[] tmp;
 
@@ -126,6 +128,9 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 				break;
 			case CLA_STOP:
 				stop(ins);
+				break;
+			case CLA_KEYS:
+				keys(ins);
 				break;
 			default:
 				ISOException.throwIt(SW_INS_NOT_SUPPORTED);
@@ -199,12 +204,10 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	private void init(byte ins) {
 		switch (ins) {
 		case INIT_START:
-			// send signature
-			break;
-		case INIT_FIRST_NONCE:
 			// decrypt nonce with private_key_sc
 			// send decrypted nonce
 			break;
+
 		case INIT_AUTHENTICATED:
 			// generate nonce
 			// store nonce
@@ -228,9 +231,6 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 
 	private void read(byte ins) {
 		switch (ins) {
-		case READ_MILEAGE_START:
-			// send signature
-			break;
 		case READ_MILEAGE_SIGNED_NONCE:
 			// decrypt nonce with private_key_sc
 			// send nonce
@@ -262,13 +262,6 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 
 	private void start(byte ins) {
 		switch (ins) {
-		case START_CAR:
-			// send signature
-			break;
-		case GET_PUBLIC_KEY_MODULUS:
-			// send pubkey modulus
-		case GET_PUBLIC_KEY_EXPONENT:
-			// send pubkey exponent
 		case SET_START_MILEAGE:
 			// started = true
 			// if start_mileage == 0, start_mileage = received_start_mileage
@@ -291,6 +284,20 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 			// if received_nonce == stored_nonce continue, else exception
 			// store final_mileage
 			break;
+		default:
+			ISOException.throwIt(SW_INS_NOT_SUPPORTED);
+		}
+	}
+	
+	private void keys(byte ins){
+		switch (ins) {
+		case KEYS_START:
+			// send signature
+			break;
+		case GET_PUBLIC_KEY_MODULUS:
+			// send pubkey modulus
+		case GET_PUBLIC_KEY_EXPONENT:
+			// send pubkey exponent
 		default:
 			ISOException.throwIt(SW_INS_NOT_SUPPORTED);
 		}

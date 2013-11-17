@@ -25,10 +25,7 @@ public class CarTerminal extends BaseTerminal{
 
 	/** Start Bytes */
 	private static final byte CLA_START = (byte) 0xB5;
-	private static final byte START_CAR = (byte) 0x01;
-	private static final byte GET_PUBLIC_KEY_MODULUS = (byte) 0x02;
-	private static final byte GET_PUBLIC_KEY_EXPONENT = (byte) 0x03;
-	private static final byte SET_START_MILEAGE = (byte) 0x04;
+	private static final byte SET_START_MILEAGE = (byte) 0x01;
 
 	/** Stop Bytes */
 	private static final byte CLA_STOP = (byte) 0xB6;
@@ -45,12 +42,8 @@ public class CarTerminal extends BaseTerminal{
 
 	
 	/** Car terminal data */
-	short tempNonce;
 	boolean car_may_start = false;
 	int mileage;
-	byte[] current_smartcard_signature;
-	RSAHandler rsaHandler;
-	RSAPublicKey pubic_key_sc;
 	RSAPublicKey public_key_ct;
 	RSAPublicKey public_key_rt;
 	RSAPrivateKey private_key_ct;
@@ -65,7 +58,6 @@ public class CarTerminal extends BaseTerminal{
 	public CarTerminal() throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
 		super();
 		tempNonce = 0;
-		rsaHandler = new RSAHandler();
 		public_key_ct = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_ct");
 		public_key_rt = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_rt");
 		private_key_ct = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_ct");
@@ -76,23 +68,11 @@ public class CarTerminal extends BaseTerminal{
 
 	void startCar() throws CardException {
 		try {
-
-			CommandAPDU capdu = new CommandAPDU(CLA_START, START_CAR, (byte) 0, (byte) 0);
-			ResponseAPDU rapdu = sendCommandAPDU(capdu);
-			current_smartcard_signature = rapdu.getData();
-			
-			capdu = new CommandAPDU(CLA_START, GET_PUBLIC_KEY_MODULUS, (byte) 0, (byte) 0);
-			rapdu = sendCommandAPDU(capdu);
-			byte[] modulus = rapdu.getData();
-			
-			capdu = new CommandAPDU(CLA_START, GET_PUBLIC_KEY_EXPONENT, (byte) 0, (byte) 0);
-			rapdu = sendCommandAPDU(capdu);
-			byte[] exponent = rapdu.getData();
-			pubic_key_sc = rsaHandler.getPublicKeyFromModulusExponent(modulus, exponent);
+			getKeys();
 			
 			tempNonce++;
-			capdu = new CommandAPDU(CLA_START, SET_START_MILEAGE, (byte) 0, (byte) 0, getEncryptedMileage(tempNonce));
-			rapdu = sendCommandAPDU(capdu);
+			CommandAPDU capdu = new CommandAPDU(CLA_START, SET_START_MILEAGE, (byte) 0, (byte) 0, getEncryptedMileage(tempNonce));
+			ResponseAPDU rapdu = sendCommandAPDU(capdu);
 			short return_nonce = checkCarData(rapdu.getData());
 			
 			if (return_nonce == tempNonce) {

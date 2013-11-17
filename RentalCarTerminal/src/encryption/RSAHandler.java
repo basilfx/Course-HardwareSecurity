@@ -71,13 +71,13 @@ public class RSAHandler {
 		return instance.verify(signature);
 	}
 	
-	public byte[] encrypt(RSAPublicKey publicKey, byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException{
+	public byte[] encrypt(Key publicKey, byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException{
 		Cipher cipher = Cipher.getInstance(ENCRYPTION_ALGORITHM);
 		cipher.init(Cipher.ENCRYPT_MODE, publicKey);
 		return cipher.doFinal(data);		
 	}
 	
-	public byte[] decrypt(RSAPrivateKey privateKey, byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException{
+	public byte[] decrypt(Key privateKey, byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException{
 		Cipher cipher = Cipher.getInstance(ENCRYPTION_ALGORITHM);
 		cipher.init(Cipher.DECRYPT_MODE, privateKey);
 		return cipher.doFinal(data);		
@@ -85,6 +85,16 @@ public class RSAHandler {
 	
 	public byte[] getKeySignature(RSAPrivateKey privateKey, Key key_to_be_signed) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException{
 		return sign(privateKey, key_to_be_signed.getEncoded());
+	}
+	
+	public byte[] encryptKeyWithPublicKey(RSAPublicKey publicKey, Key key_to_be_encrypted) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
+		return encrypt(publicKey, key_to_be_encrypted.getEncoded());
+	}
+	
+	public byte[] encryptKeyWithPrivateKey(RSAPrivateKey privateKey, Key key_to_be_encrypted) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
+		Cipher cipher = Cipher.getInstance(ENCRYPTION_ALGORITHM);
+		cipher.init(Cipher.ENCRYPT_MODE, privateKey);
+		return cipher.doFinal(key_to_be_encrypted.getEncoded());
 	}
 
 }
