@@ -57,6 +57,8 @@ public class BaseTerminal extends JPanel {
 	private static final byte GET_PUBLIC_KEY_MODULUS = (byte) 0x02;
 	private static final byte GET_PUBLIC_KEY_EXPONENT = (byte) 0x03;
 	
+	protected static final byte NONCESIZE = (byte) 0x02;
+	
 	RSAHandler rsaHandler;
 	short tempNonce;
 	Smartcard currentSmartcard;
@@ -145,15 +147,16 @@ public class BaseTerminal extends JPanel {
 	}
 	//TODO: check if the signature matches the key.
 	void getKeys() throws CardException, NoSuchAlgorithmException, InvalidKeySpecException{
-		CommandAPDU capdu = new CommandAPDU(CLA_KEYS, KEYS_START, (byte) 0, (byte) 0);
+		CommandAPDU capdu = new CommandAPDU(CLA_KEYS, KEYS_START, (byte) 0, (byte) 0, BLOCKSIZE);
 		ResponseAPDU rapdu = sendCommandAPDU(capdu);
 		currentSmartcard.setSignature(rapdu.getData());
 		
-		capdu = new CommandAPDU(CLA_KEYS, GET_PUBLIC_KEY_MODULUS, (byte) 0, (byte) 0);
+		capdu = new CommandAPDU(CLA_KEYS, GET_PUBLIC_KEY_MODULUS, (byte) 0, (byte) 0, BLOCKSIZE);
 		rapdu = sendCommandAPDU(capdu);
 		byte[] modulus = rapdu.getData();
 		
-		capdu = new CommandAPDU(CLA_KEYS, GET_PUBLIC_KEY_EXPONENT, (byte) 0, (byte) 0);
+		//TODO unsure of exponent length
+		capdu = new CommandAPDU(CLA_KEYS, GET_PUBLIC_KEY_EXPONENT, (byte) 0, (byte) 0, BLOCKSIZE);
 		rapdu = sendCommandAPDU(capdu);
 		byte[] exponent = rapdu.getData();
 		currentSmartcard.setPublicKey(rsaHandler.getPublicKeyFromModulusExponent(modulus, exponent));

@@ -68,7 +68,7 @@ public class ReceptionTerminal extends BaseTerminal {
 		try {
 			getKeys();
 			tempNonce++;
-			CommandAPDU capdu = new CommandAPDU(CLA_INIT, INIT_START, (byte) 0, (byte) 0, short2bytes(tempNonce));
+			CommandAPDU capdu = new CommandAPDU(CLA_INIT, INIT_START, (byte) 0, (byte) 0, short2bytes(tempNonce), NONCESIZE);
 			ResponseAPDU rapdu = sendCommandAPDU(capdu);
 			byte[] data = rapdu.getData();
 			short received_nonce = bytes2short(data[0], data[1]);
@@ -77,7 +77,7 @@ public class ReceptionTerminal extends BaseTerminal {
 			} else {
 				//Oh noes!, throw exception or something
 			}
-			capdu = new CommandAPDU(CLA_INIT, INIT_AUTHENTICATED, (byte) 0, (byte) 0);
+			capdu = new CommandAPDU(CLA_INIT, INIT_AUTHENTICATED, (byte) 0, (byte) 0, BLOCKSIZE);
 			rapdu = sendCommandAPDU(capdu);
 			byte[] encrypted_nonce = rapdu.getData();
 			byte[] decrypted_nonce = rsaHandler.decrypt(private_key_rt, encrypted_nonce);
@@ -112,7 +112,7 @@ public class ReceptionTerminal extends BaseTerminal {
 			
 			tempNonce++;
 			byte[] data = rsaHandler.encrypt(currentSmartcard.getPublicKey(), short2bytes(tempNonce));
-			CommandAPDU capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_SIGNED_NONCE, (byte) 0, (byte) 0, data);
+			CommandAPDU capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_SIGNED_NONCE, (byte) 0, (byte) 0, data, NONCESIZE);
 			ResponseAPDU rapdu = sendCommandAPDU(capdu);
 			data = rapdu.getData();
 			short received_nonce = bytes2short(data[0], data[1]);
@@ -124,13 +124,11 @@ public class ReceptionTerminal extends BaseTerminal {
 			
 			//TODO: invent better implementation, nonce.length = 2, encrypted_start_mileage = 128
 			// Maximum block size for encryption: 128
-			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_START_MILEAGE, (byte) 0, (byte) 0);
+			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_START_MILEAGE, (byte) 0, (byte) 0, BLOCKSIZE);
 			rapdu = sendCommandAPDU(capdu);
-			data = rapdu.getData();
+			data = rapdu.getData();			
 			
-			
-			
-			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_FINAL_MILEAGE, (byte) 0, (byte) 0);
+			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_FINAL_MILEAGE, (byte) 0, (byte) 0, BLOCKSIZE);
 			rapdu = sendCommandAPDU(capdu);
 			data = rapdu.getData();
 			

@@ -69,7 +69,7 @@ public class CarTerminal extends BaseTerminal{
 			getKeys();
 			
 			tempNonce++;
-			CommandAPDU capdu = new CommandAPDU(CLA_START, SET_START_MILEAGE, (byte) 0, (byte) 0, getEncryptedMileage(tempNonce));
+			CommandAPDU capdu = new CommandAPDU(CLA_START, SET_START_MILEAGE, (byte) 0, (byte) 0, getEncryptedMileage(tempNonce), BLOCKSIZE);
 			ResponseAPDU rapdu = sendCommandAPDU(capdu);
 			short return_nonce = checkCarData(rapdu.getData());
 			
@@ -84,12 +84,12 @@ public class CarTerminal extends BaseTerminal{
 	void stopCar() throws CardException {
 		try {
 
-			CommandAPDU capdu = new CommandAPDU(CLA_STOP, STOP_CAR, (byte) 0, (byte) 0);
+			CommandAPDU capdu = new CommandAPDU(CLA_STOP, STOP_CAR, (byte) 0, (byte) 0, NONCESIZE);
 			ResponseAPDU rapdu = sendCommandAPDU(capdu);
 			byte[] data = rapdu.getData();
 			Short nonce = bytes2short(data[0], data[1]);
 			
-			capdu = new CommandAPDU(CLA_STOP, SET_FINAL_MILEAGE, (byte) 0, (byte) 0, getEncryptedMileage(nonce));
+			capdu = new CommandAPDU(CLA_STOP, SET_FINAL_MILEAGE, (byte) 0, (byte) 0, getEncryptedMileage(nonce), BLOCKSIZE);
 			rapdu = sendCommandAPDU(capdu);
 		} catch (Exception e) {
 			throw new CardException(e.getMessage());
