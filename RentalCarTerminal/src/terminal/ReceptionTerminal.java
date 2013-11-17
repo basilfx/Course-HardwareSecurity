@@ -109,17 +109,26 @@ public class ReceptionTerminal extends BaseTerminal {
 	void read() throws CardException {
 		try {
 			getKeys();
-			CommandAPDU capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_SIGNED_NONCE, (byte) 0, (byte) 0);
+			
+			tempNonce++;
+			byte[] data = rsaHandler.encrypt(currentSmartcard.getPublicKey(), short2bytes(tempNonce));
+			CommandAPDU capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_SIGNED_NONCE, (byte) 0, (byte) 0, data);
 			ResponseAPDU rapdu = sendCommandAPDU(capdu);
-			byte[] data = rapdu.getData();
-			
-			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_SIGNED_NONCE, (byte) 0, (byte) 0);
-			rapdu = sendCommandAPDU(capdu);
 			data = rapdu.getData();
+			short received_nonce = bytes2short(data[0], data[1]);
+			if (tempNonce == received_nonce){
+				//continue
+			} else {
+				//exception
+			}
 			
+			//TODO: invent better implementation, nonce.length = 2, encrypted_start_mileage = 128
+			// Maximum block size for encryption: 128
 			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_START_MILEAGE, (byte) 0, (byte) 0);
 			rapdu = sendCommandAPDU(capdu);
 			data = rapdu.getData();
+			
+			
 			
 			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_FINAL_MILEAGE, (byte) 0, (byte) 0);
 			rapdu = sendCommandAPDU(capdu);

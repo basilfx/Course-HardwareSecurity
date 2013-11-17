@@ -96,12 +96,15 @@ public class CarTerminal extends BaseTerminal{
 		}
 	}
 
-	
+	//TODO: cant encrypt, 2 + 128 > 128
 	byte[] getEncryptedMileage(short nonce) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
 		byte[] b_nonce = short2bytes(nonce);
-		byte[] final_mileage = int2bytes(mileage);
-		byte[] data = mergeByteArrays(b_nonce, final_mileage);
-		return rsaHandler.encrypt(currentSmartcard.getPublicKey(), data);
+		byte[] signed_mileage = rsaHandler.encrypt(private_key_ct, int2bytes(mileage));
+		byte[] encrypted_singed_mileage = rsaHandler.encrypt(public_key_rt, signed_mileage);
+		byte[] data = mergeByteArrays(b_nonce, encrypted_singed_mileage);
+		byte[] signed_data = rsaHandler.encrypt(private_key_ct, data);
+		byte[] encrypted_signed_data = rsaHandler.encrypt(currentSmartcard.getPublicKey(), signed_data);
+		return rsaHandler.encrypt(currentSmartcard.getPublicKey(), encrypted_signed_data);
 	}
 	
 	//TODO check if data is actually correct
