@@ -90,7 +90,8 @@ public class CarTerminal extends BaseTerminal{
 			byte[] exponent = rapdu.getData();
 			pubic_key_sc = rsaHandler.getPublicKeyFromModulusExponent(modulus, exponent);
 			
-			capdu = new CommandAPDU(CLA_START, SET_START_MILEAGE, (byte) 0, (byte) 0, getStartMileage());
+			tempNonce++;
+			capdu = new CommandAPDU(CLA_START, SET_START_MILEAGE, (byte) 0, (byte) 0, getEncryptedMileage(tempNonce));
 			rapdu = sendCommandAPDU(capdu);
 			short return_nonce = checkCarData(rapdu.getData());
 			
@@ -110,24 +111,21 @@ public class CarTerminal extends BaseTerminal{
 			byte[] data = rapdu.getData();
 			Short nonce = bytes2short(data[0], data[1]);
 			
-			capdu = new CommandAPDU(CLA_STOP, SET_FINAL_MILEAGE, (byte) 0, (byte) 0, getFinalMileage(nonce));
+			capdu = new CommandAPDU(CLA_STOP, SET_FINAL_MILEAGE, (byte) 0, (byte) 0, getEncryptedMileage(nonce));
 			rapdu = sendCommandAPDU(capdu);
 		} catch (Exception e) {
 			throw new CardException(e.getMessage());
 		}
 	}
 
-	byte[] getStartMileage() {
-		tempNonce++;
-		return null;
-	}
 	
-	byte[] getFinalMileage(short nonce) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
+	byte[] getEncryptedMileage(short nonce) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
 		byte[] b_nonce = short2bytes(nonce);
 		byte[] final_mileage = int2bytes(mileage);
 		byte[] data = mergeByteArrays(b_nonce, final_mileage);
 		return rsaHandler.encrypt(pubic_key_sc, data);
 	}
+	
 	//TODO check if data is actually correct
 	short checkCarData(byte[] data) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
 		byte[] decrypted_data = rsaHandler.decrypt(private_key_ct, data);
