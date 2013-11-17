@@ -4,6 +4,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.crypto.Cipher;
@@ -25,16 +26,17 @@ import com.sun.org.apache.xml.internal.security.utils.Base64;
 public class IssuingTerminal extends BaseTerminal {
 	
 	// CLA of this Terminal.
-	static final byte CLA_TERMINAL_IS = (byte) 0x01;
+	static final byte CLA_ISSUE = (byte) 0xB1;
 
 	// Instructions.
-	private static final byte INS_SET_PUB_MODULUS = (byte) 0x03;
-	private static final byte INS_SET_PRIV_MODULUS = (byte) 0x12;
-	private static final byte INS_SET_PRIV_EXP = (byte) 0x22;
-	private static final byte INS_SET_PUB_EXP = (byte) 0x32;
-	private static final byte INS_ISSUE = (byte) 0x40;
-	private static final byte INS_ENCRYPT = (byte) 0xE0;
-	private static final byte INS_DECRYPT = (byte) 0xD0;
+	private static final byte SET_PUBLIC_KEY_SIGNATURE = (byte) 0x01;
+	private static final byte SET_PUBLIC_KEY_MODULUS_SC = (byte) 0x02;
+	private static final byte SET_PUBLIC_KEY_EXPONENT_SC = (byte) 0x03;
+	private static final byte SET_SC_ID = (byte) 0x04;
+	private static final byte SET_PRVATE_KEY_MODULUS_SC = (byte) 0x05;
+	private static final byte SET_PRIVATE_KEY_EXPONENT_SC = (byte) 0x06;
+	private static final byte SET_PUBLIC_KEY_MODULUS_RT = (byte) 0x07;
+	private static final byte SET_PUBLIC_KEY_EXPONENT_RT = (byte) 0x08;
 	
 	// The card applet.
 	CardChannel applet;
@@ -51,11 +53,45 @@ public class IssuingTerminal extends BaseTerminal {
 	 * 
 	 * @param  Integer  smartCardId  The ID of the SC.
 	 */
-	public void issueCard(Integer smartCardId) throws Exception {
+	public void issueCard(short smartCardId) throws Exception {
+		//
+		// Send the SC id to the SC.
+		//
+		// IS -> SC : sc_id
+		//
+		
+		CommandAPDU capdu = new CommandAPDU(CLA_ISSUE, SET_SC_ID, (byte) 0, (byte) 0, short2bytes(smartCardId));
+		ResponseAPDU rapdu = sendCommandAPDU(capdu);
+		
+		byte[] data = rapdu.getData();
+		
+		log("Card ID has been set to: " + Short.toString(bytes2short(data[0], data[1])));
+		
+		/*
+		
+		//
+		// Send the public key of the SC to the SC.
+		//
+		// IS -> SC : pubkey_sc
+		//
+		
+		// Get the public key of the SC by reading the key file.
+		RSAPublicKey SCPublicKey;
+		try {
+			SCPublicKey = getRSAPublicKeyFromFile("keys/public_key_sc");
+		}
+		catch (Exception e) {
+			throw new Exception("[Error] IssuingTerminal: Exception when trying to get public key of SC (" + e.getMessage() + ")");
+		}
+		
+		// Send the public key of the SC to the SC.
+		
+		// TODO.
+		
 		//
 		// Create a signature of the concatenation of the SC id and the public key of the SC.
 		// The data is signed with the private key of the RT.
-		// Send the signature, the id of the SC and the public key of the SC to the SC.
+		// Send the signature to the SC.
 		//
 		// IS -> SC : {|sc_id, pubkey_sc|}privkey_rt
 		//
@@ -69,15 +105,6 @@ public class IssuingTerminal extends BaseTerminal {
 			throw new Exception("[Error] IssuingTerminal: Exception when trying to get private key of RT (" + e.getMessage() + ")");
 		}
 		
-		// Get the public key of the SC by reading the key file.
-		RSAPublicKey SCPublicKey;
-		try {
-			SCPublicKey = getRSAPublicKeyFromFile("keys/public_key_sc");
-		}
-		catch (Exception e) {
-			throw new Exception("[Error] IssuingTerminal: Exception when trying to get public key of SC (" + e.getMessage() + ")");
-		}
-		
 		// Concatenate the SC id and the public key of the SC.
 		byte[] toBeSigned = (smartCardId.toString() + SCPublicKey.toString()).getBytes();
 		
@@ -86,6 +113,8 @@ public class IssuingTerminal extends BaseTerminal {
 		signatureIntance.initSign(RTPrivateKey);
 		signatureIntance.update(toBeSigned);
     	byte[] signature = signatureIntance.sign();
+    	
+    	
     	
     	//
     	// Send the private key of the SC to the SC.
@@ -101,7 +130,7 @@ public class IssuingTerminal extends BaseTerminal {
     	// IS -> SC : pubkey_rt
     	//
     	
-    	// TODO.
+    	// TODO.*/
 	}
 
 }

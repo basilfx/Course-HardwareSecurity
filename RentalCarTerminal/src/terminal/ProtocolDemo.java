@@ -9,16 +9,16 @@ import javax.smartcardio.CardException;
  */
 public class ProtocolDemo {
 	
-	private Integer smartCartId;
+	private short smartCartId;
 
 	/**
 	 * Constructor.
 	 */
 	public ProtocolDemo() {
-		smartCartId = 1337;
+		smartCartId = (short) 1337;
 	}
 	
-	public Integer getSmartCartId() {
+	public short getSmartCartId() {
 		return smartCartId;
 	}
 
@@ -26,11 +26,18 @@ public class ProtocolDemo {
 	 * Run a demo of the car rental protocol.
 	 * 
 	 * @param	arg	command line arguments.
+	 * @throws InterruptedException 
 	 */
-	public static void main(String[] arg) {
+	public static void main(String[] arg) throws InterruptedException {
 		ProtocolDemo demo = new ProtocolDemo();
 		
 		IssuingTerminal terminal = new IssuingTerminal();
+		
+		// Wait 2 seconds so that the smart card can be selected.
+		System.out.println("wait 2 seconds so that card can be selected.");
+		Thread.sleep(2000);
+		System.out.println("proceed...");
+		
 		try {
 			terminal.issueCard(demo.getSmartCartId());
 		}

@@ -311,23 +311,20 @@ public class BaseTerminal extends JPanel {
 		
 		return data;
 	}
-
-	/**
-	 * Creates an instance of this class.
-	 * 
-	 * @param	arg	command line arguments.
-	 */
-	public static void main(String[] arg) {
-		IssuingTerminal terminal = new IssuingTerminal();
-	}
 	
 	public static short bytes2short(byte first_byte, byte second_byte)
 	 {
 	    return (short)((first_byte<<8) | (second_byte));
 	 } 
 	
+	/**
+	 * Convert short to byte array.
+	 * 
+	 * @param s
+	 * @return
+	 */
 	public static byte[] short2bytes(short s){
-		return ByteBuffer.allocate(2).putInt(s).array();
+		return ByteBuffer.allocate(2).putShort(s).array();
 	}
 	
 	public static byte[] int2bytes(int i){

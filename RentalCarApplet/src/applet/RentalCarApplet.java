@@ -80,6 +80,9 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 
 	/** Cipher for encryption and decryption. */
 	Cipher cipher;
+	
+	// SC ID.
+	private short cardId;
 
 	public static void install(byte[] bArray, short bOffset, byte bLength) throws SystemException {
 		new RentalCarApplet();
@@ -99,45 +102,46 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		byte ins = buf[OFFSET_INS];
 		byte cla = buf[OFFSET_CLA];
 		short lc = (short) (buf[OFFSET_LC] & 0x00FF);
-		short outLength;
 
 		if (selectingApplet()) {
 			return;
 		}
+		
+		readBuffer(apdu, tmp, (short)0, lc);
 
 		switch (state) {
-		case STATE_INIT:
-			issue(ins);
-			break;
-		case STATE_ISSUED:
-			switch (cla) {
-			case CLA_ISSUE:
-				issue(ins);
+			case STATE_INIT:
+				issue(apdu, ins);
 				break;
-			case CLA_INIT:
-				init(ins);
-				break;
-			case CLA_READ:
-				read(ins);
-				break;
-			case CLA_RESET:
-				reset(ins);
-				break;
-			case CLA_START:
-				start(ins);
-				break;
-			case CLA_STOP:
-				stop(ins);
-				break;
-			case CLA_KEYS:
-				keys(ins);
+			case STATE_ISSUED:
+				switch (cla) {
+					case CLA_ISSUE:
+						issue(apdu, ins);
+						break;
+					case CLA_INIT:
+						init(ins);
+						break;
+					case CLA_READ:
+						read(ins);
+						break;
+					case CLA_RESET:
+						reset(ins);
+						break;
+					case CLA_START:
+						start(ins);
+						break;
+					case CLA_STOP:
+						stop(ins);
+						break;
+					case CLA_KEYS:
+						keys(ins);
+						break;
+					default:
+						ISOException.throwIt(SW_INS_NOT_SUPPORTED);
+					}
 				break;
 			default:
-				ISOException.throwIt(SW_INS_NOT_SUPPORTED);
-			}
-			break;
-		default:
-			ISOException.throwIt(SW_CONDITIONS_NOT_SATISFIED);
+				ISOException.throwIt(SW_CONDITIONS_NOT_SATISFIED);
 		}
 	}
 
@@ -170,34 +174,40 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		}
 	}
 
-	private void issue(byte ins) {
+	private void issue(APDU apdu, byte ins) {
 		switch (ins) {
-		case SET_PUBLIC_KEY_SIGNATURE:
-			// store signature
-			break;
-		case SET_PUBLIC_KEY_MODULUS_SC:
-			// store key modulus
-			break;
-		case SET_PUBLIC_KEY_EXPONENT_SC:
-			// store key exponent
-			break;
-		case SET_SC_ID:
-			// store sc_id
-			break;
-		case SET_PRVATE_KEY_MODULUS_SC:
-			// store key modulus
-			break;
-		case SET_PRIVATE_KEY_EXPONENT_SC:
-			// store key exponent
-		case SET_PUBLIC_KEY_MODULUS_RT:
-			// store key modulus
-			break;
-		case SET_PUBLIC_KEY_EXPONENT_RT:
-			// store key exponent
-			// state = issued
-			break;
-		default:
-			ISOException.throwIt(SW_INS_NOT_SUPPORTED);
+			case SET_PUBLIC_KEY_SIGNATURE:
+				// store signature
+				break;
+			case SET_PUBLIC_KEY_MODULUS_SC:
+				// store key modulus
+				break;
+			case SET_PUBLIC_KEY_EXPONENT_SC:
+				// store key exponent
+				break;
+			case SET_SC_ID:
+				// store sc_id
+				byte[] buf = apdu.getBuffer();
+				short lc = (short) (buf[OFFSET_LC] & 0x00FF);
+				cardId = Util.getShort(tmp, (short)0);
+				buf[0] = (byte)((cardId >> 8) & 0xff);
+				buf[1] = (byte)(cardId & 0xff);
+				apdu.setOutgoingAndSend((short)0, (short)2);
+				break;
+			case SET_PRVATE_KEY_MODULUS_SC:
+				// store key modulus
+				break;
+			case SET_PRIVATE_KEY_EXPONENT_SC:
+				// store key exponent
+			case SET_PUBLIC_KEY_MODULUS_RT:
+				// store key modulus
+				break;
+			case SET_PUBLIC_KEY_EXPONENT_RT:
+				// store key exponent
+				// state = issued
+				break;
+			default:
+				ISOException.throwIt(SW_INS_NOT_SUPPORTED);
 		}
 	}
 
