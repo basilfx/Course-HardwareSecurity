@@ -5,6 +5,8 @@ import java.awt.event.*;
 import java.io.*;
 import java.math.BigInteger;
 import java.util.List;
+
+import javax.crypto.Cipher;
 import javax.swing.*;
 
 import java.security.*;
@@ -12,6 +14,8 @@ import java.security.spec.*;
 import java.security.interfaces.*;
 
 import javax.smartcardio.*;
+
+import com.sun.org.apache.xml.internal.security.utils.Base64;
 
 /**
  * Issuing Terminal application.
@@ -41,6 +45,77 @@ public class IssuingTerminal extends BaseTerminal {
 	public IssuingTerminal() {
 		super();
 	}
+	
+	/**
+	 * Issues the card.
+	 */
+	public void issueCard() throws Exception {
+		//
+		// First create the certificate of the public key of the SC (signed with the private key of the RT).
+		//
+		
+		// Obtain the private key of the RT by reading the key file.
+		try {
+			byte[] data = readFile("keys/private_key_rt");
+			PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(data);
+			KeyFactory factory = KeyFactory.getInstance("RSA");
+			RSAPrivateKey RTPrivateKey = (RSAPrivateKey) factory.generatePrivate(spec);
+			
+			try {
+				byte[] dataPk = readFile("keys/public_key_rt");
+				X509EncodedKeySpec specPk = new X509EncodedKeySpec(dataPk);
+				KeyFactory factoryPk = KeyFactory.getInstance("RSA");
+				RSAPublicKey RTPublicKey = (RSAPublicKey) factoryPk.generatePublic(specPk);
+				
+				try {
+					// Test encryption/decryption.
+					String testString = "test";
+					byte[] testStringByteArray = testString.getBytes();
+					
+					Cipher encrypt_cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+					encrypt_cipher.init(Cipher.ENCRYPT_MODE, RTPublicKey);
+			        byte[] encryptedTestStringByteArray = encrypt_cipher.doFinal(testStringByteArray);
+			        
+			        log("encryption: " + (new String(encryptedTestStringByteArray)));
+			        
+			        Cipher decrypt_cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+			        decrypt_cipher.init(Cipher.DECRYPT_MODE, RTPrivateKey);			        
+			        byte[] decryptedTestStringByteArray = decrypt_cipher.doFinal(encryptedTestStringByteArray);
+			        
+			        log("decryption: " + (new String(decryptedTestStringByteArray)));
+			        
+			        try {
+			        	// Test sign/verify.
+			        	Signature sig_sign = Signature.getInstance("SHA1withRSA");
+			        	sig_sign.initSign(RTPrivateKey);
+			        	sig_sign.update(testStringByteArray);
+			        	byte[] signature = sig_sign.sign();
+			        	
+			        	log("signature: " + (new String(signature)));
+			        	
+			        	Signature sig_verify = Signature.getInstance("SHA1withRSA");
+			        	sig_verify.initVerify(RTPublicKey);
+			        	sig_verify.update(testStringByteArray);
+			        	boolean verified = sig_verify.verify(signature);
+			        	
+			        	log("signature verified: " + verified);
+			        }
+			        catch (Exception e) {
+			        	log("[Error] IssuingTerminal: Exception when trying to sign (" + e.getMessage() + ")");
+			        }
+				}
+				catch (Exception e) {
+					log("[Error] IssuingTerminal: Exception when trying to encrypt/decrypt (" + e.getMessage() + ")");
+				}
+			}
+			catch (Exception e) {
+				log("[Error] IssuingTerminal: Exception when trying to read public key file (" + e.getMessage() + ")");
+			}
+		}
+		catch (Exception e) {
+			log("[Error] IssuingTerminal: Exception when trying to read private key file (" + e.getMessage() + ")");
+		}
+	}
 
 	/**
 	 * Handles 'set pub key' button event.
@@ -50,7 +125,7 @@ public class IssuingTerminal extends BaseTerminal {
 	 */
 	void setPubKey() throws CardException {
 		try {
-			byte[] data = readFile();
+			byte[] data = readFile("");
 			X509EncodedKeySpec spec = new X509EncodedKeySpec(data);
 			KeyFactory factory = KeyFactory.getInstance("RSA");
 			RSAPublicKey key = (RSAPublicKey) factory.generatePublic(spec);
@@ -79,7 +154,7 @@ public class IssuingTerminal extends BaseTerminal {
 	 */
 	void setPrivKey() throws CardException {
 		try {
-			byte[] data = readFile();
+			byte[] data = readFile("");
 			PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(data);
 			KeyFactory factory = KeyFactory.getInstance("RSA");
 			RSAPrivateKey key = (RSAPrivateKey) factory.generatePrivate(spec);
@@ -124,7 +199,7 @@ public class IssuingTerminal extends BaseTerminal {
 	 */
 	void encrypt() throws CardException {
 		try {
-			byte[] data = readFile();
+			byte[] data = readFile("");
 			if (data.length > BLOCKSIZE) {
 				throw new CardException("File too large.");
 			}
@@ -144,7 +219,7 @@ public class IssuingTerminal extends BaseTerminal {
 	 */
 	void decrypt() throws Exception {
 		try {
-			byte[] data = readFile();
+			byte[] data = readFile("");
 			if (data.length > BLOCKSIZE) {
 				throw new Exception("File too large.");
 			}
