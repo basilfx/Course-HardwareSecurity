@@ -5,6 +5,8 @@ import java.awt.event.*;
 import java.io.*;
 import java.math.BigInteger;
 import java.util.List;
+
+import javax.crypto.Cipher;
 import javax.swing.*;
 
 import java.security.*;
@@ -18,7 +20,7 @@ import javax.smartcardio.*;
  * 
  * @author	Group 3
  */
-public class BaseTerminal {
+public class BaseTerminal extends JPanel {
 	protected static final int BLOCKSIZE = 128;
 	protected static final byte[] APPLET_AID = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x01 };
 	
@@ -35,6 +37,12 @@ public class BaseTerminal {
 	protected static final int STATE_INIT = 0;
 	protected static final int STATE_ISSUED = 1;
 
+	// Last accessed directory of file browser.
+	private File currentDir = new File(".");
+	
+	// Cipher used for encryption/decryption.
+	protected Cipher cipher;
+	
 	// The card applet.
 	protected CardChannel applet;
 
@@ -190,27 +198,31 @@ public class BaseTerminal {
 	/**
 	 * Pops up dialog to ask user to select file and reads the file.
 	 * 
+	 * @param  String  file_path  The path of the file to read.
+	 * 
 	 * @return byte array with contents of the file.
 	 * 
 	 * @throws IOException
 	 *             if file could not be read.
 	 */
-	protected byte[] readFile() throws IOException {
+	protected byte[] readFile(String file_path) throws IOException {
 		/*JFileChooser chooser = new JFileChooser();
 		chooser.setCurrentDirectory(currentDir);
 		int n = chooser.showOpenDialog(this);
 		if (n != JFileChooser.APPROVE_OPTION) {
 			throw new IOException("No file selected");
 		}
-		File file = chooser.getSelectedFile();
+		File file = chooser.getSelectedFile();*/
+		
+		File file = new File(file_path);
 		FileInputStream in = new FileInputStream(file);
 		int length = in.available();
 		byte[] data = new byte[length];
 		in.read(data);
 		in.close();
 		currentDir = file.getParentFile();
-		return data;*/
-		return null;
+
+		return data;
 	}
 
 	/**
