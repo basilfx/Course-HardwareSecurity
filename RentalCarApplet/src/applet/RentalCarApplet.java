@@ -188,7 +188,6 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 			case SET_SC_ID:
 				// store sc_id
 				byte[] buf = apdu.getBuffer();
-				short lc = (short) (buf[OFFSET_LC] & 0x00FF);
 				cardId = Util.getShort(tmp, (short)0);
 				buf[0] = (byte)((cardId >> 8) & 0xff);
 				buf[1] = (byte)(cardId & 0xff);
