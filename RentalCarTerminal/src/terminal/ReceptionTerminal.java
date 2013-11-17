@@ -1,17 +1,15 @@
 package terminal;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
-import java.math.BigInteger;
-import java.util.List;
-import javax.swing.*;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
 
-import java.security.*;
-import java.security.spec.*;
-import java.security.interfaces.*;
-
-import javax.smartcardio.*;
+import javax.smartcardio.CardChannel;
+import javax.smartcardio.CardException;
+import javax.smartcardio.CommandAPDU;
+import javax.smartcardio.ResponseAPDU;
 
 import encryption.RSAHandler;
 

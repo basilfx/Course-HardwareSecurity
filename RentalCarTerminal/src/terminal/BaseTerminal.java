@@ -1,20 +1,30 @@
 package terminal;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
+import java.awt.event.ActionEvent;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.List;
 
 import javax.crypto.Cipher;
-import javax.swing.*;
-
-import java.security.*;
-import java.security.spec.*;
-import java.security.interfaces.*;
-
-import javax.smartcardio.*;
+import javax.smartcardio.Card;
+import javax.smartcardio.CardChannel;
+import javax.smartcardio.CardException;
+import javax.smartcardio.CardTerminal;
+import javax.smartcardio.CardTerminals;
+import javax.smartcardio.CommandAPDU;
+import javax.smartcardio.ResponseAPDU;
+import javax.smartcardio.TerminalFactory;
+import javax.swing.JPanel;
 
 import encryption.RSAHandler;
 
@@ -47,11 +57,9 @@ public class BaseTerminal extends JPanel {
 	private static final byte GET_PUBLIC_KEY_MODULUS = (byte) 0x02;
 	private static final byte GET_PUBLIC_KEY_EXPONENT = (byte) 0x03;
 	
-	byte[] current_smartcard_signature;
-	RSAPublicKey pubic_key_sc;
 	RSAHandler rsaHandler;
 	short tempNonce;
-
+	Smartcard currentSmartcard;
 
 
 
@@ -69,6 +77,7 @@ public class BaseTerminal extends JPanel {
 	 */
 	public BaseTerminal() {
 		rsaHandler = new RSAHandler();
+		currentSmartcard = new Smartcard();
 		(new CardThread()).start();
 	}
 
@@ -134,11 +143,11 @@ public class BaseTerminal extends JPanel {
 			}
 		}
 	}
-	
+	//TODO: check if the signature matches the key.
 	void getKeys() throws CardException, NoSuchAlgorithmException, InvalidKeySpecException{
 		CommandAPDU capdu = new CommandAPDU(CLA_KEYS, KEYS_START, (byte) 0, (byte) 0);
 		ResponseAPDU rapdu = sendCommandAPDU(capdu);
-		current_smartcard_signature = rapdu.getData();
+		currentSmartcard.setSignature(rapdu.getData());
 		
 		capdu = new CommandAPDU(CLA_KEYS, GET_PUBLIC_KEY_MODULUS, (byte) 0, (byte) 0);
 		rapdu = sendCommandAPDU(capdu);
@@ -147,7 +156,7 @@ public class BaseTerminal extends JPanel {
 		capdu = new CommandAPDU(CLA_KEYS, GET_PUBLIC_KEY_EXPONENT, (byte) 0, (byte) 0);
 		rapdu = sendCommandAPDU(capdu);
 		byte[] exponent = rapdu.getData();
-		pubic_key_sc = rsaHandler.getPublicKeyFromModulusExponent(modulus, exponent);
+		currentSmartcard.setPublicKey(rsaHandler.getPublicKeyFromModulusExponent(modulus, exponent));
 	}
 
 	/**

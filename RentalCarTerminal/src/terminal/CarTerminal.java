@@ -15,8 +15,6 @@ import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
-import encryption.RSAHandler;
-
 /**
  * Car terminal for the Rental Car applet.
  * 
@@ -103,7 +101,7 @@ public class CarTerminal extends BaseTerminal{
 		byte[] b_nonce = short2bytes(nonce);
 		byte[] final_mileage = int2bytes(mileage);
 		byte[] data = mergeByteArrays(b_nonce, final_mileage);
-		return rsaHandler.encrypt(pubic_key_sc, data);
+		return rsaHandler.encrypt(currentSmartcard.getPublicKey(), data);
 	}
 	
 	//TODO check if data is actually correct
