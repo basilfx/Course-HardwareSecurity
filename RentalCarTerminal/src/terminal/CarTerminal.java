@@ -1,51 +1,27 @@
 package terminal;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.util.List;
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import javax.swing.*;
-
-import java.security.*;
-import java.security.spec.*;
-import java.security.interfaces.*;
-
-import javax.smartcardio.*;
+import javax.smartcardio.CardChannel;
+import javax.smartcardio.CardException;
+import javax.smartcardio.CommandAPDU;
+import javax.smartcardio.ResponseAPDU;
 
 import encryption.RSAHandler;
 
 /**
- * Sample terminal for the Crypto applet.
+ * Car terminal for the Rental Car applet.
  * 
- * @author Martijn Oostdijk (martijno@cs.kun.nl)
- * @author Joeri de Ruiter (joeri@cs.ru.nl)
- * 
- * @version $Revision: 2.0 $
  */
-public class CarTerminal {
-	static final int BLOCKSIZE = 128;
-
-	static final String TITLE = "Crypto Terminal";
-	static final int DISPLAY_WIDTH = 30;
-	static final int DISPLAY_HEIGHT = 20;
-
-	static final String MSG_ERROR = "Error";
-	static final String MSG_INVALID = "Invalid";
-
-	static final byte[] APPLET_AID = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x01 };
-	static final byte CLA_ISO = (byte) 0x00;
-	static final byte INS_SELECT = (byte) 0xA4;
-	static final short SW_NO_ERROR = (short) 0x9000;
-	static final short SW_APPLET_SELECT_FAILED = (short) 0x6999;
-	static final short SW_FILE_NOT_FOUND = (short) 0x6A82;
-
-	static final CommandAPDU SELECT_APDU = new CommandAPDU((byte) 0x00, (byte) 0xA4, (byte) 0x04, (byte) 0x00, APPLET_AID);
+public class CarTerminal extends BaseTerminal{
 
 	/** Start Bytes */
 	private static final byte CLA_START = (byte) 0xB5;
@@ -59,6 +35,8 @@ public class CarTerminal {
 	private static final byte STOP_CAR = (byte) 0x01;
 	private static final byte SET_FINAL_MILEAGE = (byte) 0x02;
 
+	
+	
 	private static final int STATE_INIT = 0;
 	private static final int STATE_ISSUED = 1;
 
@@ -85,83 +63,16 @@ public class CarTerminal {
 	 * @throws NoSuchAlgorithmException 
 	 */
 	public CarTerminal() throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+		super();
 		tempNonce = 0;
 		rsaHandler = new RSAHandler();
 		public_key_ct = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_ct");
 		public_key_rt = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_rt");
 		private_key_ct = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_ct");
 		
-		setEnabled(false);
-		(new CardThread()).start();
 	}
 
-	/**
-	 * Enables/disables the buttons.
-	 * 
-	 * @param b
-	 *            boolean indicating whether to enable or disable the buttons.
-	 */
-	public void setEnabled(boolean b) {
 
-	}
-
-	class CardThread extends Thread {
-		public void run() {
-			try {
-				TerminalFactory tf = TerminalFactory.getDefault();
-				CardTerminals ct = tf.terminals();
-				List<CardTerminal> cs = ct.list(CardTerminals.State.CARD_PRESENT);
-				if (cs.isEmpty()) {
-					log("No terminals with a card found.");
-					return;
-				}
-
-				while (true) {
-					try {
-						for (CardTerminal c : cs) {
-							if (c.isCardPresent()) {
-								try {
-									Card card = c.connect("*");
-									try {
-										applet = card.getBasicChannel();
-										ResponseAPDU resp = applet.transmit(SELECT_APDU);
-										if (resp.getSW() != 0x9000) {
-											throw new Exception("Select failed");
-										}
-										setEnabled(true);
-
-										// Wait for the card to be removed
-										while (c.isCardPresent())
-											;
-										setEnabled(false);
-										break;
-									} catch (Exception e) {
-										log("Card does not contain CryptoApplet?!");
-										sleep(2000);
-										continue;
-									}
-								} catch (CardException e) {
-									log("Couldn't connect to card!");
-									sleep(2000);
-									continue;
-								}
-							} else {
-								log("No card present!");
-								sleep(2000);
-								continue;
-							}
-						}
-					} catch (CardException e) {
-						log("Card status problem!");
-					}
-				}
-			} catch (Exception e) {
-				setEnabled(false);
-				log("ERROR: " + e.getMessage());
-				e.printStackTrace();
-			}
-		}
-	}
 
 	void startCar() throws CardException {
 		try {
@@ -229,112 +140,4 @@ public class CarTerminal {
 		return nonce;
 	}
 
-	/**
-	 * Sends a command to the card.
-	 * 
-	 * @param capdu
-	 *            the command to send.
-	 * 
-	 * @return the response from the card.
-	 * 
-	 * @throws CardTerminalException
-	 *             if something goes wrong.
-	 */
-	ResponseAPDU sendCommandAPDU(CommandAPDU capdu) throws CardException {
-		log(capdu);
-		ResponseAPDU rapdu = applet.transmit(capdu);
-		log(rapdu);
-		return rapdu;
-	}
-
-	String toHexString(byte[] in) {
-		StringBuilder out = new StringBuilder(2 * in.length);
-		for (int i = 0; i < in.length; i++) {
-			out.append(String.format("%02x ", (in[i] & 0xFF)));
-		}
-		return out.toString().toUpperCase();
-	}
-
-	/**
-	 * Writes <code>obj</code> to the log.
-	 * 
-	 * @param obj
-	 *            the message to write to the log.
-	 */
-	void log(ResponseAPDU obj) {
-		System.out.println(obj.toString());
-	}
-
-	/**
-	 * Writes <code>obj</code> to the log.
-	 * 
-	 * @param obj
-	 *            the message to write to the log.
-	 */
-	void log(CommandAPDU obj) {
-		System.out.println(obj.toString());
-	}
-
-	/**
-	 * Writes <code>obj</code> to the log.
-	 * 
-	 * @param obj
-	 *            the message to write to the log.
-	 */
-	void log(Object obj) {
-		System.out.println(obj.toString());
-	}
-
-	/**
-	 * Gets an unsigned byte array representation of <code>big</code>. A leading
-	 * zero (present only to hold sign bit) is stripped.
-	 * 
-	 * @param big
-	 *            a big integer.
-	 * 
-	 * @return a byte array containing a representation of <code>big</code>.
-	 */
-	byte[] getBytes(BigInteger big) {
-		byte[] data = big.toByteArray();
-		if (data[0] == 0) {
-			byte[] tmp = data;
-			data = new byte[tmp.length - 1];
-			System.arraycopy(tmp, 1, data, 0, tmp.length - 1);
-		}
-		return data;
-	}
-
-	/**
-	 * Creates an instance of this class and puts it inside a frame.
-	 * 
-	 * @param arg
-	 *            command line arguments.
-	 */
-	public static void main(String[] arg) {
-
-	}
-	
-	public static short bytes2short(byte first_byte, byte second_byte)
-	 {
-	    return (short)((first_byte<<8) | (second_byte));
-	 } 
-	
-	public static byte[] short2bytes(short s){
-		return ByteBuffer.allocate(2).putInt(s).array();
-	}
-	
-	public static byte[] int2bytes(int i){
-		return ByteBuffer.allocate(4).putInt(i).array();
-	}
-	
-	public static byte[] mergeByteArrays(byte[] first, byte[] second){
-		byte[] result = new byte[first.length + second.length];
-		for (int i = 0; i < first.length; i++){
-			result[i] = first[i];
-		}
-		for (int i = first.length; i < first.length + second.length; i++){
-			result[i + first.length] = second[i];
-		}		
-		return result;
-	}
 }

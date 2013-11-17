@@ -4,6 +4,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.List;
 import javax.swing.*;
 
@@ -241,5 +242,29 @@ public class BaseTerminal {
 	 */
 	public static void main(String[] arg) {
 		IssuingTerminal terminal = new IssuingTerminal();
+	}
+	
+	public static short bytes2short(byte first_byte, byte second_byte)
+	 {
+	    return (short)((first_byte<<8) | (second_byte));
+	 } 
+	
+	public static byte[] short2bytes(short s){
+		return ByteBuffer.allocate(2).putInt(s).array();
+	}
+	
+	public static byte[] int2bytes(int i){
+		return ByteBuffer.allocate(4).putInt(i).array();
+	}
+	
+	public static byte[] mergeByteArrays(byte[] first, byte[] second){
+		byte[] result = new byte[first.length + second.length];
+		for (int i = 0; i < first.length; i++){
+			result[i] = first[i];
+		}
+		for (int i = first.length; i < first.length + second.length; i++){
+			result[i + first.length] = second[i];
+		}		
+		return result;
 	}
 }
