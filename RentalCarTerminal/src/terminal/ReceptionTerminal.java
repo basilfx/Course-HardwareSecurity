@@ -1,17 +1,15 @@
 package terminal;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
-import java.math.BigInteger;
-import java.util.List;
-import javax.swing.*;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
 
-import java.security.*;
-import java.security.spec.*;
-import java.security.interfaces.*;
-
-import javax.smartcardio.*;
+import javax.smartcardio.CardChannel;
+import javax.smartcardio.CardException;
+import javax.smartcardio.CommandAPDU;
+import javax.smartcardio.ResponseAPDU;
 
 import encryption.RSAHandler;
 
@@ -70,7 +68,7 @@ public class ReceptionTerminal extends BaseTerminal {
 		try {
 			getKeys();
 			tempNonce++;
-			CommandAPDU capdu = new CommandAPDU(CLA_INIT, INIT_START, (byte) 0, (byte) 0, short2bytes(tempNonce));
+			CommandAPDU capdu = new CommandAPDU(CLA_INIT, INIT_START, (byte) 0, (byte) 0, short2bytes(tempNonce), NONCESIZE);
 			ResponseAPDU rapdu = sendCommandAPDU(capdu);
 			byte[] data = rapdu.getData();
 			short received_nonce = bytes2short(data[0], data[1]);
@@ -79,7 +77,7 @@ public class ReceptionTerminal extends BaseTerminal {
 			} else {
 				//Oh noes!, throw exception or something
 			}
-			capdu = new CommandAPDU(CLA_INIT, INIT_AUTHENTICATED, (byte) 0, (byte) 0);
+			capdu = new CommandAPDU(CLA_INIT, INIT_AUTHENTICATED, (byte) 0, (byte) 0, BLOCKSIZE);
 			rapdu = sendCommandAPDU(capdu);
 			byte[] encrypted_nonce = rapdu.getData();
 			byte[] decrypted_nonce = rsaHandler.decrypt(private_key_rt, encrypted_nonce);
@@ -111,19 +109,26 @@ public class ReceptionTerminal extends BaseTerminal {
 	void read() throws CardException {
 		try {
 			getKeys();
-			CommandAPDU capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_SIGNED_NONCE, (byte) 0, (byte) 0);
+			
+			tempNonce++;
+			byte[] data = rsaHandler.encrypt(currentSmartcard.getPublicKey(), short2bytes(tempNonce));
+			CommandAPDU capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_SIGNED_NONCE, (byte) 0, (byte) 0, data, NONCESIZE);
 			ResponseAPDU rapdu = sendCommandAPDU(capdu);
-			byte[] data = rapdu.getData();
-			
-			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_SIGNED_NONCE, (byte) 0, (byte) 0);
-			rapdu = sendCommandAPDU(capdu);
 			data = rapdu.getData();
+			short received_nonce = bytes2short(data[0], data[1]);
+			if (tempNonce == received_nonce){
+				//continue
+			} else {
+				//exception
+			}
 			
-			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_START_MILEAGE, (byte) 0, (byte) 0);
+			//TODO: invent better implementation, nonce.length = 2, encrypted_start_mileage = 128
+			// Maximum block size for encryption: 128
+			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_START_MILEAGE, (byte) 0, (byte) 0, BLOCKSIZE);
 			rapdu = sendCommandAPDU(capdu);
-			data = rapdu.getData();
+			data = rapdu.getData();			
 			
-			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_FINAL_MILEAGE, (byte) 0, (byte) 0);
+			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_FINAL_MILEAGE, (byte) 0, (byte) 0, BLOCKSIZE);
 			rapdu = sendCommandAPDU(capdu);
 			data = rapdu.getData();
 			

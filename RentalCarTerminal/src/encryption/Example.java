@@ -30,6 +30,8 @@ public class Example {
 		byte[] data = rsaHandler.decrypt(privateKey, encrypted_data);
 		String text = new String(data);
 		System.out.println("Encrypted string: " + plaintext);
+		System.out.println("Encrypted data: " + bytes2String(encrypted_data));
+		System.out.println("Encrypted length: " + encrypted_data.length);
 		System.out.println("Decrypted string: " + text);
 
 	}
