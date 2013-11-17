@@ -3,7 +3,9 @@ package encryption;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.security.InvalidKeyException;
+import java.security.Key;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.Signature;
@@ -12,6 +14,7 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 
 import javax.crypto.BadPaddingException;
@@ -30,10 +33,10 @@ public class RSAHandler {
 		int length = in.available();
 		byte[] data = new byte[length];
 		in.read(data);
-		in.close();
-		X509EncodedKeySpec spec2 = new X509EncodedKeySpec(data);
+		in.close();		
+		X509EncodedKeySpec spec = new X509EncodedKeySpec(data);
 		KeyFactory factory = KeyFactory.getInstance(ENCRYPTION_ALGORITHM);
-		return (RSAPublicKey) factory.generatePublic(spec2);
+		return (RSAPublicKey) factory.generatePublic(spec);
 	}
 
 	public RSAPrivateKey readPrivateKeyFromFileSystem(String filename) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
@@ -46,6 +49,12 @@ public class RSAHandler {
 		PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(data);
 		KeyFactory factory = KeyFactory.getInstance(ENCRYPTION_ALGORITHM);
 		return (RSAPrivateKey) factory.generatePrivate(spec);
+	}
+	
+	public RSAPublicKey getPublicKeyFromModulusExponent(byte[] modulus, byte[] exponent) throws NoSuchAlgorithmException, InvalidKeySpecException{
+		RSAPublicKeySpec spec = new RSAPublicKeySpec(new BigInteger(modulus), new BigInteger(exponent));
+		KeyFactory factory = KeyFactory.getInstance(ENCRYPTION_ALGORITHM);
+		return (RSAPublicKey) factory.generatePublic(spec);
 	}
 	
 	public byte[] sign(RSAPrivateKey privateKey, byte[] data) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException{
@@ -72,6 +81,10 @@ public class RSAHandler {
 		Cipher cipher = Cipher.getInstance(ENCRYPTION_ALGORITHM);
 		cipher.init(Cipher.DECRYPT_MODE, privateKey);
 		return cipher.doFinal(data);		
+	}
+	
+	public byte[] getKeySignature(RSAPrivateKey privateKey, Key key_to_be_signed) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException{
+		return sign(privateKey, key_to_be_signed.getEncoded());
 	}
 
 }
