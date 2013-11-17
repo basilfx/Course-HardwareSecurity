@@ -137,6 +137,38 @@ public class BaseTerminal extends JPanel {
 			System.out.println("Error in action listener: " + e.getMessage());
 		}
 	}
+	
+	/**
+	 * Generates an instance of RSAPrivateKey from a key-file.
+	 * 
+	 * @param  filePath  The path of the key-file.
+	 * 
+	 * @return  The RSAPrivateKey instance.
+	 */
+	protected RSAPrivateKey getRSAPrivateKeyFromFile(String filePath) throws Exception {
+		byte[] data = readFile(filePath);
+		PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(data);
+		KeyFactory factory = KeyFactory.getInstance("RSA");
+		RSAPrivateKey key = (RSAPrivateKey) factory.generatePrivate(spec);
+		
+		return key;
+	}
+	
+	/**
+	 * Generates an instance of RSAPublicKey from a key-file.
+	 * 
+	 * @param  filePath  The path of the key-file.
+	 * 
+	 * @return  The RSAPublicKey instance.
+	 */
+	protected RSAPublicKey getRSAPublicKeyFromFile(String filePath) throws Exception {
+		byte[] data = readFile(filePath);
+		X509EncodedKeySpec spec = new X509EncodedKeySpec(data);
+		KeyFactory factory = KeyFactory.getInstance("RSA");
+		RSAPublicKey key = (RSAPublicKey) factory.generatePublic(spec);
+		
+		return key;
+	}
 
 	/**
 	 * Sends a command to the card.

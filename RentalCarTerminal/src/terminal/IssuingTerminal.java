@@ -48,186 +48,60 @@ public class IssuingTerminal extends BaseTerminal {
 	
 	/**
 	 * Issues the card.
+	 * 
+	 * @param  Integer  smartCardId  The ID of the SC.
 	 */
-	public void issueCard() throws Exception {
+	public void issueCard(Integer smartCardId) throws Exception {
 		//
-		// First create the certificate of the public key of the SC (signed with the private key of the RT).
+		// Create a signature of the concatenation of the SC id and the public key of the SC.
+		// The data is signed with the private key of the RT.
+		// Send the signature, the id of the SC and the public key of the SC to the SC.
+		//
+		// IS -> SC : {|sc_id, pubkey_sc|}privkey_rt
 		//
 		
-		// Obtain the private key of the RT by reading the key file.
+		// Get the private key of the RT by reading the key file.
+		RSAPrivateKey RTPrivateKey;
 		try {
-			byte[] data = readFile("keys/private_key_rt");
-			PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(data);
-			KeyFactory factory = KeyFactory.getInstance("RSA");
-			RSAPrivateKey RTPrivateKey = (RSAPrivateKey) factory.generatePrivate(spec);
-			
-			try {
-				byte[] dataPk = readFile("keys/public_key_rt");
-				X509EncodedKeySpec specPk = new X509EncodedKeySpec(dataPk);
-				KeyFactory factoryPk = KeyFactory.getInstance("RSA");
-				RSAPublicKey RTPublicKey = (RSAPublicKey) factoryPk.generatePublic(specPk);
-				
-				try {
-					// Test encryption/decryption.
-					String testString = "test";
-					byte[] testStringByteArray = testString.getBytes();
-					
-					Cipher encrypt_cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-					encrypt_cipher.init(Cipher.ENCRYPT_MODE, RTPublicKey);
-			        byte[] encryptedTestStringByteArray = encrypt_cipher.doFinal(testStringByteArray);
-			        
-			        log("encryption: " + (new String(encryptedTestStringByteArray)));
-			        
-			        Cipher decrypt_cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-			        decrypt_cipher.init(Cipher.DECRYPT_MODE, RTPrivateKey);			        
-			        byte[] decryptedTestStringByteArray = decrypt_cipher.doFinal(encryptedTestStringByteArray);
-			        
-			        log("decryption: " + (new String(decryptedTestStringByteArray)));
-			        
-			        try {
-			        	// Test sign/verify.
-			        	Signature sig_sign = Signature.getInstance("SHA1withRSA");
-			        	sig_sign.initSign(RTPrivateKey);
-			        	sig_sign.update(testStringByteArray);
-			        	byte[] signature = sig_sign.sign();
-			        	
-			        	log("signature: " + (new String(signature)));
-			        	
-			        	Signature sig_verify = Signature.getInstance("SHA1withRSA");
-			        	sig_verify.initVerify(RTPublicKey);
-			        	sig_verify.update(testStringByteArray);
-			        	boolean verified = sig_verify.verify(signature);
-			        	
-			        	log("signature verified: " + verified);
-			        }
-			        catch (Exception e) {
-			        	log("[Error] IssuingTerminal: Exception when trying to sign (" + e.getMessage() + ")");
-			        }
-				}
-				catch (Exception e) {
-					log("[Error] IssuingTerminal: Exception when trying to encrypt/decrypt (" + e.getMessage() + ")");
-				}
-			}
-			catch (Exception e) {
-				log("[Error] IssuingTerminal: Exception when trying to read public key file (" + e.getMessage() + ")");
-			}
+			RTPrivateKey = getRSAPrivateKeyFromFile("keys/private_key_rt");
 		}
 		catch (Exception e) {
-			log("[Error] IssuingTerminal: Exception when trying to read private key file (" + e.getMessage() + ")");
+			throw new Exception("[Error] IssuingTerminal: Exception when trying to get private key of RT (" + e.getMessage() + ")");
 		}
-	}
-
-	/**
-	 * Handles 'set pub key' button event.
-	 * 
-	 * @throws CardException
-	 *             if something goes wrong.
-	 */
-	void setPubKey() throws CardException {
+		
+		// Get the public key of the SC by reading the key file.
+		RSAPublicKey SCPublicKey;
 		try {
-			byte[] data = readFile("");
-			X509EncodedKeySpec spec = new X509EncodedKeySpec(data);
-			KeyFactory factory = KeyFactory.getInstance("RSA");
-			RSAPublicKey key = (RSAPublicKey) factory.generatePublic(spec);
-
-			byte[] modulus = getBytes(key.getModulus());
-
-			CommandAPDU capdu;
-			capdu = new CommandAPDU(CLA_TERMINAL_IS, INS_SET_PUB_MODULUS, (byte) 0,
-					(byte) 0, modulus);
-			sendCommandAPDU(capdu);
-
-			byte[] exponent = getBytes(key.getPublicExponent());
-			capdu = new CommandAPDU(CLA_TERMINAL_IS, INS_SET_PUB_EXP, (byte) 0,
-					(byte) 0, exponent);
-			sendCommandAPDU(capdu);
-		} catch (Exception e) {
-			throw new CardException(e.getMessage());
+			SCPublicKey = getRSAPublicKeyFromFile("keys/public_key_sc");
 		}
+		catch (Exception e) {
+			throw new Exception("[Error] IssuingTerminal: Exception when trying to get public key of SC (" + e.getMessage() + ")");
+		}
+		
+		// Concatenate the SC id and the public key of the SC.
+		byte[] toBeSigned = (smartCardId.toString() + SCPublicKey.toString()).getBytes();
+		
+		// Sign the concatenation of the SC id and the public key of the SC.
+		Signature signatureIntance = Signature.getInstance("SHA1withRSA");
+		signatureIntance.initSign(RTPrivateKey);
+		signatureIntance.update(toBeSigned);
+    	byte[] signature = signatureIntance.sign();
+    	
+    	//
+    	// Send the private key of the SC to the SC.
+    	//
+    	// IS -> SC : privkey_sc
+    	//
+    	
+    	// TODO.
+    	
+    	//
+    	// Send the public key of the RT to the SC.
+    	//
+    	// IS -> SC : pubkey_rt
+    	//
+    	
+    	// TODO.
 	}
 
-	/**
-	 * Handles 'set priv key' button event.
-	 * 
-	 * @throws CardException
-	 *             if something goes wrong.
-	 */
-	void setPrivKey() throws CardException {
-		try {
-			byte[] data = readFile("");
-			PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(data);
-			KeyFactory factory = KeyFactory.getInstance("RSA");
-			RSAPrivateKey key = (RSAPrivateKey) factory.generatePrivate(spec);
-
-			byte[] modulus = getBytes(key.getModulus());
-			CommandAPDU capdu;
-			capdu = new CommandAPDU(CLA_TERMINAL_IS, INS_SET_PRIV_MODULUS, (byte) 0,
-					(byte) 0, modulus);
-			sendCommandAPDU(capdu);
-
-			byte[] exponent = getBytes(key.getPrivateExponent());
-			capdu = new CommandAPDU(CLA_TERMINAL_IS, INS_SET_PRIV_EXP, (byte) 0,
-					(byte) 0, exponent);
-			sendCommandAPDU(capdu);
-
-		} catch (Exception e) {
-			throw new CardException(e.getMessage());
-		}
-	}
-
-	/**
-	 * Handles 'issue' button event.
-	 * 
-	 * @throws CardException
-	 *             if something goes wrong.
-	 */
-	void issue() throws CardException {
-		try {
-			CommandAPDU capdu = new CommandAPDU(CLA_TERMINAL_IS, INS_ISSUE,
-					(byte) 0, (byte) 0);
-			sendCommandAPDU(capdu);
-		} catch (Exception e) {
-			throw new CardException(e.getMessage());
-		}
-	}
-
-	/**
-	 * Handles 'encrypt' button event.
-	 * 
-	 * @throws CardException
-	 *             if something goes wrong.
-	 */
-	void encrypt() throws CardException {
-		try {
-			byte[] data = readFile("");
-			if (data.length > BLOCKSIZE) {
-				throw new CardException("File too large.");
-			}
-			CommandAPDU capdu = new CommandAPDU(CLA_TERMINAL_IS, INS_ENCRYPT,
-					(byte) 0, (byte) 0, data, BLOCKSIZE);
-			sendCommandAPDU(capdu);
-		} catch (IOException e) {
-			throw new CardException(e.getMessage());
-		}
-	}
-
-	/**
-	 * Handles 'decrypt' button event.
-	 * 
-	 * @throws CardException
-	 *             if something goes wrong.
-	 */
-	void decrypt() throws Exception {
-		try {
-			byte[] data = readFile("");
-			if (data.length > BLOCKSIZE) {
-				throw new Exception("File too large.");
-			}
-			CommandAPDU capdu = new CommandAPDU(CLA_TERMINAL_IS, INS_DECRYPT,
-					(byte) 0, (byte) 0, data, BLOCKSIZE);
-			applet.transmit(capdu);
-		} catch (IOException e) {
-			throw new Exception(e.getMessage());
-		}
-	}
 }
