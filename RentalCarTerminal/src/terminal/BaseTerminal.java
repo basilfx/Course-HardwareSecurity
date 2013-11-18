@@ -34,7 +34,6 @@ import encryption.RSAHandler;
  * @author	Group 3
  */
 public class BaseTerminal extends JPanel {
-	protected static final int BLOCKSIZE = 128;
 	protected static final byte[] APPLET_AID = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x01 };
 	
 	// Select-instruction.
@@ -57,7 +56,9 @@ public class BaseTerminal extends JPanel {
 	private static final byte GET_PUBLIC_KEY_MODULUS = (byte) 0x02;
 	private static final byte GET_PUBLIC_KEY_EXPONENT = (byte) 0x03;
 	
-	protected static final byte NONCESIZE = (byte) 0x02;
+	protected static final int BLOCKSIZE = 128;
+	protected static final int NONCESIZE = 2;
+	protected static final int SCIDSIZE = 2; 
 	
 	RSAHandler rsaHandler;
 	short tempNonce;

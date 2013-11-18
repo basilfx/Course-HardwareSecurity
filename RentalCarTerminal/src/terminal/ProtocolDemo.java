@@ -1,5 +1,9 @@
 package terminal;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+
 import javax.smartcardio.CardException;
 
 /**
@@ -27,8 +31,11 @@ public class ProtocolDemo {
 	 * 
 	 * @param	arg	command line arguments.
 	 * @throws InterruptedException 
+	 * @throws IOException 
+	 * @throws InvalidKeySpecException 
+	 * @throws NoSuchAlgorithmException 
 	 */
-	public static void main(String[] arg) throws InterruptedException {
+	public static void main(String[] arg) throws InterruptedException, NoSuchAlgorithmException, InvalidKeySpecException, IOException {
 		ProtocolDemo demo = new ProtocolDemo();
 		
 		IssuingTerminal terminal = new IssuingTerminal();
