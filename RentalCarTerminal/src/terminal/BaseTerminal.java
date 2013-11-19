@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
@@ -62,7 +63,7 @@ public class BaseTerminal extends JPanel {
 	
 	RSAHandler rsaHandler;
 	short tempNonce;
-	Smartcard currentSmartcard;
+	public Smartcard currentSmartcard;
 
 
 
@@ -325,9 +326,12 @@ public class BaseTerminal extends JPanel {
 		return data;
 	}
 	
-	public static short bytes2short(byte first_byte, byte second_byte)
-	 {
-	    return (short)((first_byte<<8) | (second_byte));
+	public static short bytes2short(byte first_byte, byte second_byte) {
+		ByteBuffer bb = ByteBuffer.allocate(2);
+		bb.order(ByteOrder.LITTLE_ENDIAN);
+		bb.put(first_byte);
+		bb.put(second_byte);
+	    return (short)( ((first_byte&0xFF)<<8) | (second_byte&0xFF) );
 	 } 
 	
 	/**
@@ -349,15 +353,23 @@ public class BaseTerminal extends JPanel {
 		for (int i = 0; i < first.length; i++){
 			result[i] = first[i];
 		}
-		
-		//for (int i = first.length; i < first.length + second.length; i++){
-		//	result[i + first.length] = second[i];
-		//}
-		
+				
 		for (int i = 0; i < second.length; i++){
 			result[first.length + i] = second[i];
 		}
 		
 		return result;
+	}
+	
+	public static boolean compareArrays(byte[] first, byte[] second){
+		if (first.length != second.length){
+			return false;
+		}
+		for (int i = 0; i < first.length; i++){
+			if (first[i] != second[i]){
+				return false;
+			}
+		}
+		return true;
 	}
 }

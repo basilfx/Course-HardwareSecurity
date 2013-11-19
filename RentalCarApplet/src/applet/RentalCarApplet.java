@@ -65,6 +65,7 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	private static final byte GET_PUBLIC_KEY_MODULUS = (byte) 0x02;
 	private static final byte GET_PUBLIC_KEY_EXPONENT = (byte) 0x03;
 	
+	private static final byte BLOCKSIZE = (byte) 128;
 	
 	// Temporary buffer in RAM.
 	byte[] tmp;
@@ -150,7 +151,7 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 						stop(ins);
 						break;
 					case CLA_KEYS:
-						keys(ins);
+						keys(apdu, ins, lc);
 						break;
 					default:
 						ISOException.throwIt(SW_INS_NOT_SUPPORTED);
@@ -198,10 +199,10 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 			case SET_PUBLIC_KEY_SIGNATURE:
 				// Store the signature of the RT.
 				Util.arrayCopy(tmp, (short) 0, signatureRT, (short) 0, lc);
-				
+				apdu.setOutgoing();//Volgensmij verwijderd deze methode een deel van de buffer, dus eerst deze methode aanroepen, dan de buffer aanpassen.
 				// Send signature as a response for debugging info.
 				buf = signatureRT;
-				apdu.setOutgoingAndSend((short) 0, (short) 128);
+				apdu.sendBytes((short)0,(short)128);
 				
 				break;
 			case SET_PUBLIC_KEY_MODULUS_SC:
@@ -334,15 +335,29 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		}
 	}
 	
-	private void keys(byte ins){
+	private void keys(APDU apdu, byte ins, short lc){
+		
+		byte[] buf = apdu.getBuffer();
+		
 		switch (ins) {
 		case KEYS_START:
 			// send signature
+			apdu.setOutgoing();
+			Util.arrayCopy(signatureRT, (short) 0, buf, (short) 0, lc);			
+			apdu.sendBytes((short)0,BLOCKSIZE);
 			break;
 		case GET_PUBLIC_KEY_MODULUS:
 			// send pubkey modulus
+			apdu.setOutgoing();
+			pubKeySC.getModulus(buf, (short) 0);
+			apdu.sendBytes((short)0,BLOCKSIZE);
+			break;
 		case GET_PUBLIC_KEY_EXPONENT:
 			// send pubkey exponent
+			apdu.setOutgoing();
+			pubKeySC.getExponent(buf, (short) 0);
+			apdu.sendBytes((short)0,BLOCKSIZE);
+			break;
 		default:
 			ISOException.throwIt(SW_INS_NOT_SUPPORTED);
 		}

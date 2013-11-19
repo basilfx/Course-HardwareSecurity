@@ -90,6 +90,10 @@ public class IssuingTerminal extends BaseTerminal {
 		log("Sent signature: " + new String(signature));
 		log("Retrieved signature: " + new String(responseSignature));
 		
+		log("Comparing send data with data on smart card");
+		getKeys();
+		log("Signature: " + compareArrays(responseSignature, signature));
+		log("Public key: " + compareArrays(public_key_sc.getEncoded(), currentSmartcard.getPublicKey().getEncoded()));
 		/*
 		// Revert byte order.
 		for (int i = 0, j = responseSignature.length - 1; i < j; i++, j--) {
