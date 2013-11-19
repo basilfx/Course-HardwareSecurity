@@ -66,23 +66,29 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	private static final byte GET_PUBLIC_KEY_EXPONENT = (byte) 0x03;
 	
 	
-	/** Temporary buffer in RAM. */
+	// Temporary buffer in RAM.
 	byte[] tmp;
 
-	/** The applet state (INIT or ISSUED). */
+	// The applet state (INIT or ISSUED).
 	byte state;
-
-	/** Key for encryption. */
-	RSAPublicKey pubKey;
-
-	/** Key for decryption. */
-	RSAPrivateKey privKey;
-
-	/** Cipher for encryption and decryption. */
-	Cipher cipher;
 	
-	// SC ID.
+	// Cipher for encryption and decryption.
+	Cipher cipher;
+
+	// privkey_sc.
+	RSAPrivateKey privKeySC;
+	
+	// pubkey_sc.
+	RSAPublicKey pubKeySC;
+
+	// pubkey_rt.
+	RSAPublicKey pubKeyRT;
+	
+	// sc_id.
 	private short cardId;
+	
+	// {|sc_id, pubkey_sc|}privkey_rt.
+	private byte[] signatureRT;
 
 	public static void install(byte[] bArray, short bOffset, byte bLength) throws SystemException {
 		new RentalCarApplet();
@@ -90,10 +96,20 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 
 	public RentalCarApplet() {
 		tmp = JCSystem.makeTransientByteArray((short) 256, JCSystem.CLEAR_ON_RESET);
-		pubKey = (RSAPublicKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PUBLIC, KeyBuilder.LENGTH_RSA_1024, false);
-		privKey = (RSAPrivateKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PRIVATE, KeyBuilder.LENGTH_RSA_1024, false);
 		cipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1, false);
+		
+		// Create instances of keys.
+		privKeySC = (RSAPrivateKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PRIVATE, KeyBuilder.LENGTH_RSA_1024, false);
+		pubKeySC = (RSAPublicKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PUBLIC, KeyBuilder.LENGTH_RSA_1024, false);
+		pubKeyRT = (RSAPublicKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PUBLIC, KeyBuilder.LENGTH_RSA_1024, false);
+		
+		// Initialize signature.
+		signatureRT = new byte[128];
+		
+		// Initialize state.
 		state = STATE_INIT;
+		
+		// Register this applet instance with the JCRE.
 		register();
 	}
 
@@ -111,12 +127,12 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 
 		switch (state) {
 			case STATE_INIT:
-				issue(apdu, ins);
+				issue(apdu, ins, lc);
 				break;
 			case STATE_ISSUED:
 				switch (cla) {
 					case CLA_ISSUE:
-						issue(apdu, ins);
+						issue(apdu, ins, lc);
 						break;
 					case CLA_INIT:
 						init(ins);
@@ -174,36 +190,56 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		}
 	}
 
-	private void issue(APDU apdu, byte ins) {
+	private void issue(APDU apdu, byte ins, short lc) {
+		
+		byte[] buf = apdu.getBuffer();
+		
 		switch (ins) {
 			case SET_PUBLIC_KEY_SIGNATURE:
-				// store signature
+				// Store the signature of the RT.
+				Util.arrayCopy(tmp, (short) 0, signatureRT, (short) 0, lc);
+				
+				// Send signature as a response for debugging info.
+				buf = signatureRT;
+				apdu.setOutgoingAndSend((short) 0, (short) 128);
+				
 				break;
 			case SET_PUBLIC_KEY_MODULUS_SC:
-				// store key modulus
+				// Store the modulus of the public key of the SC.
+                pubKeySC.setModulus(tmp, (short) 0, lc);
 				break;
 			case SET_PUBLIC_KEY_EXPONENT_SC:
-				// store key exponent
+				// Store the exponent of the public key of the SC.
+                pubKeySC.setExponent(tmp, (short) 0, lc);
 				break;
 			case SET_SC_ID:
-				// store sc_id
-				byte[] buf = apdu.getBuffer();
+				// Store the ID of the SC.
 				cardId = Util.getShort(tmp, (short)0);
-				buf[0] = (byte)((cardId >> 8) & 0xff);
-				buf[1] = (byte)(cardId & 0xff);
-				apdu.setOutgoingAndSend((short)0, (short)2);
+				
+				// Send cardId as a response for debugging info.
+				buf[0] = (byte) ((cardId >> 8) & 0xff);
+				buf[1] = (byte) (cardId & 0xff);
+				apdu.setOutgoingAndSend((short) 0, (short) 2);
+				
 				break;
 			case SET_PRVATE_KEY_MODULUS_SC:
-				// store key modulus
+				// Store the modulus of the private key of the SC.
+                privKeySC.setModulus(tmp, (short) 0, lc);
 				break;
 			case SET_PRIVATE_KEY_EXPONENT_SC:
-				// store key exponent
+				// Store the exponent of the private key of the SC.
+                privKeySC.setExponent(tmp, (short) 0, lc);
 			case SET_PUBLIC_KEY_MODULUS_RT:
-				// store key modulus
+				// Store the modulus of the public key of the RT.
+                pubKeyRT.setModulus(tmp, (short) 0, lc);
 				break;
 			case SET_PUBLIC_KEY_EXPONENT_RT:
-				// store key exponent
-				// state = issued
+				// Store the modulus of the public key of the RT.
+                pubKeyRT.setExponent(tmp, (short) 0, lc);
+                
+                // Set state to "Issued".
+                state = STATE_ISSUED;
+                
 				break;
 			default:
 				ISOException.throwIt(SW_INS_NOT_SUPPORTED);

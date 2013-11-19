@@ -349,9 +349,15 @@ public class BaseTerminal extends JPanel {
 		for (int i = 0; i < first.length; i++){
 			result[i] = first[i];
 		}
-		for (int i = first.length; i < first.length + second.length; i++){
-			result[i + first.length] = second[i];
-		}		
+		
+		//for (int i = first.length; i < first.length + second.length; i++){
+		//	result[i + first.length] = second[i];
+		//}
+		
+		for (int i = 0; i < second.length; i++){
+			result[first.length + i] = second[i];
+		}
+		
 		return result;
 	}
 }
