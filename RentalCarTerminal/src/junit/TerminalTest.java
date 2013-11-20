@@ -58,7 +58,7 @@ public class TerminalTest {
 		assertTrue("Check if pubkey matches", BaseTerminal.compareArrays(first.getPublicKey().getEncoded(), second.getPublicKey().getEncoded()));
 		
 		RSAPublicKey public_key_rt = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_rt");
-		byte[] data = BaseTerminal.mergeByteArrays(BaseTerminal.short2bytes(smartCardId), first.getPublicKey().getEncoded());
+		byte[] data = BaseTerminal.mergeByteArrays(BaseTerminal.shortToBytes(smartCardId), first.getPublicKey().getEncoded());
 		boolean result = rsaHandler.verify(public_key_rt, data, second.getSignature());
 		assertTrue("validate signature", result);
 	}

@@ -3,6 +3,8 @@
  */
 package applet;
 
+import org.globalplatform.SecureChannel;
+
 import javacard.framework.*;
 import javacard.security.*;
 import javacardx.crypto.*;
@@ -65,7 +67,9 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	private static final byte GET_PUBLIC_KEY_MODULUS = (byte) 0x02;
 	private static final byte GET_PUBLIC_KEY_EXPONENT = (byte) 0x03;
 	
-	private static final byte BLOCKSIZE = (byte) 128;
+	private static final short BLOCKSIZE = (short) 128;
+	private static final short SCIDSIZE = (short) 2;
+	private static final short NONCESIZE = (short) 2;
 	
 	// Temporary buffer in RAM.
 	byte[] tmp;
@@ -201,7 +205,7 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 				Util.arrayCopy(tmp, (short) 0, signatureRT, (short) 0, lc);
 				apdu.setOutgoing();//Volgensmij verwijderd deze methode een deel van de buffer, dus eerst deze methode aanroepen, dan de buffer aanpassen.
 				// Send signature as a response for debugging info.
-				buf = signatureRT;
+				buf = signatureRT;//Ik weet niet of dit wel mag, het lijkt me beter om Util.arrayCopy te gebruiken
 				apdu.sendBytes((short)0,(short)128);
 				
 				break;
@@ -341,10 +345,12 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		
 		switch (ins) {
 		case KEYS_START:
-			// send signature
+			// send SC_ID + signature
 			apdu.setOutgoing();
-			Util.arrayCopy(signatureRT, (short) 0, buf, (short) 0, lc);			
-			apdu.sendBytes((short)0,BLOCKSIZE);
+			buf[0] = (byte) ((cardId >> 8) & 0xff);
+			buf[1] = (byte) (cardId & 0xff);
+			Util.arrayCopy(signatureRT, (short) 0, buf, (short) 2, lc);			
+			apdu.sendBytes((short)0, (short) (SCIDSIZE + BLOCKSIZE));
 			break;
 		case GET_PUBLIC_KEY_MODULUS:
 			// send pubkey modulus

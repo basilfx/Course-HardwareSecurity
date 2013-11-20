@@ -28,24 +28,24 @@ public class GeneralTest {
 	
 	@Test
 	public void testBytes2ShortCorrect(){
-		assertEquals("Bytes 2 short test correct",test, BaseTerminal.bytes2short(first, second));
+		assertEquals("Bytes 2 short test correct",test, BaseTerminal.bytesToShort(first, second));
 	}
 	
 	@Test
 	public void testBytes2ShortIncorrect(){
-		assertFalse("Bytes 2 short test incorrect",BaseTerminal.bytes2short(first, second) == (test+1));
+		assertFalse("Bytes 2 short test incorrect",BaseTerminal.bytesToShort(first, second) == (test+1));
 	}
 	
 	@Test
 	public void testShort2BytesCorrect(){
-		byte[] bytes = BaseTerminal.short2bytes(test);
+		byte[] bytes = BaseTerminal.shortToBytes(test);
 		assertEquals("Short 2 bytes correct, first byte", first, bytes[0]);
 		assertEquals("Short 2 bytes correct, second byte", second, bytes[1]);
 	}
 	
 	@Test
 	public void testShort2BytesIncorrect(){
-		byte[] bytes = BaseTerminal.short2bytes(test);
+		byte[] bytes = BaseTerminal.shortToBytes(test);
 		assertFalse("Short 2 bytes incorrect, first byte", first == bytes[1]);
 		assertFalse("Short 2 bytes incorrect, second byte", second == bytes[0]);
 	}

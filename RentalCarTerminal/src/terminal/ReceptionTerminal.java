@@ -1,11 +1,15 @@
 package terminal;
 
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.smartcardio.CardChannel;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
@@ -71,10 +75,10 @@ public class ReceptionTerminal extends BaseTerminal {
 		try {
 			getKeys();
 			tempNonce++;
-			CommandAPDU capdu = new CommandAPDU(CLA_INIT, INIT_START, (byte) 0, (byte) 0, short2bytes(tempNonce), NONCESIZE);
+			CommandAPDU capdu = new CommandAPDU(CLA_INIT, INIT_START, (byte) 0, (byte) 0, shortToBytes(tempNonce), NONCESIZE);
 			ResponseAPDU rapdu = sendCommandAPDU(capdu);
 			byte[] data = rapdu.getData();
-			short received_nonce = bytes2short(data[0], data[1]);
+			short received_nonce = bytesToShort(data[0], data[1]);
 			if (tempNonce == received_nonce){//TODO
 				// were fine!
 			} else {
@@ -114,37 +118,51 @@ public class ReceptionTerminal extends BaseTerminal {
 			getKeys();
 			
 			tempNonce++;
-			byte[] data = rsaHandler.encrypt(currentSmartcard.getPublicKey(), short2bytes(tempNonce));
+			byte[] data = rsaHandler.encrypt(currentSmartcard.getPublicKey(), shortToBytes(tempNonce));
 			CommandAPDU capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_SIGNED_NONCE, (byte) 0, (byte) 0, data, NONCESIZE);
 			ResponseAPDU rapdu = sendCommandAPDU(capdu);
 			data = rapdu.getData();
-			short received_nonce = bytes2short(data[0], data[1]);
+			short received_nonce = bytesToShort(data[0], data[1]);
 			if (tempNonce == received_nonce){
 				//continue
 			} else {
 				//exception
 			}
 			
-			//TODO: invent better implementation, nonce.length = 2, encrypted_start_mileage = 128
-			// Maximum block size for encryption: 128
-			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_START_MILEAGE, (byte) 0, (byte) 0, BLOCKSIZE);
+			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_START_MILEAGE, (byte) 0, (byte) 0, NONCESIZE + MILEAGESIZE + BLOCKSIZE);
 			rapdu = sendCommandAPDU(capdu);
-			data = rapdu.getData();			
+			data = rapdu.getData();
+			verifyMileage(data);
+			
 			
 			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_FINAL_MILEAGE, (byte) 0, (byte) 0, BLOCKSIZE);
 			rapdu = sendCommandAPDU(capdu);
 			data = rapdu.getData();
-			
-			data = rapdu.getData();
+			verifyMileage(data);
 			
 		} catch (Exception e) {
 			throw new CardException(e.getMessage());
 		}
 	}
-	//TODO: real implementation
+	
+	//TODO: unsure if correct
+	public void verifyMileage(byte[] data) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
+		byte[] nonce = subArray(data, 0, NONCESIZE);
+		byte[] mileage = subArray(data, NONCESIZE, MILEAGESIZE);
+		byte[] encrypted_signed_mileage = subArray(data, NONCESIZE + MILEAGESIZE, BLOCKSIZE);
+		byte[] signed_mileage = rsaHandler.decrypt(private_key_rt, encrypted_signed_mileage);
+		byte[] unsigned_mileage = rsaHandler.decrypt(public_key_ct, signed_mileage);
+		byte[] nonce_mileage = subArray(unsigned_mileage, 0, NONCESIZE + MILEAGESIZE);
+		
+		if (compareArrays(mergeByteArrays(nonce, mileage), nonce_mileage)){
+			//store values
+		} else {
+			//exception
+		}
+	}
+
 	public void reset() throws CardException {
 		try {
-
 			CommandAPDU capdu = new CommandAPDU(CLA_RESET, RESET_CARD, (byte) 0, (byte) 0);
 			ResponseAPDU rapdu = sendCommandAPDU(capdu);
 			byte[] data = rapdu.getData();
@@ -161,8 +179,8 @@ public class ReceptionTerminal extends BaseTerminal {
 		date[0] = 15;
 		date[1] = 11;
 		date[2] = 13;
-		byte[] data = mergeByteArrays(short2bytes(tempNonce), date);
-		return mergeByteArrays(data, short2bytes(car_id));
+		byte[] data = mergeByteArrays(shortToBytes(tempNonce), date);
+		return mergeByteArrays(data, shortToBytes(car_id));
 	}
 	
 	

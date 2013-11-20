@@ -61,11 +61,11 @@ public class IssuingTerminal extends BaseTerminal {
 		CommandAPDU capdu;
 		
 		// Send the SC id to the SC. IS -> SC : sc_id
-		capdu = new CommandAPDU(CLA_ISSUE, SET_SC_ID, (byte) 0, (byte) 0, short2bytes(smartCardId), SCIDSIZE);
+		capdu = new CommandAPDU(CLA_ISSUE, SET_SC_ID, (byte) 0, (byte) 0, shortToBytes(smartCardId), SCIDSIZE);
 		ResponseAPDU rapdu = sendCommandAPDU(capdu);
 		
 		byte[] data = rapdu.getData();
-		log("Card ID has been set to: " + Short.toString(bytes2short(data[0], data[1])));
+		log("Card ID has been set to: " + Short.toString(bytesToShort(data[0], data[1])));
 		
 		// Send the public key of the SC to the SC. IS -> SC : pubkey_sc
 		byte[] modulus = getBytes(currentSmartcard.getPublicKey().getModulus());
@@ -78,7 +78,7 @@ public class IssuingTerminal extends BaseTerminal {
 		
 		
 		// Send signature. IS -> SC : {|sc_id, pubkey_sc|}privkey_rt
-		byte[] mergedData = mergeByteArrays(short2bytes(smartCardId), currentSmartcard.getPublicKey().getEncoded());
+		byte[] mergedData = mergeByteArrays(shortToBytes(smartCardId), currentSmartcard.getPublicKey().getEncoded());
 		byte[] signature = rsaHandler.sign(private_key_rt, mergedData);
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_SIGNATURE, (byte) 0, (byte) 0, signature, BLOCKSIZE);
 		rapdu = sendCommandAPDU(capdu);
@@ -88,10 +88,6 @@ public class IssuingTerminal extends BaseTerminal {
 		log("Sent signature: " + new String(signature));
 		log("Retrieved signature: " + new String(responseSignature));
 		
-		log("Comparing send data with data on smart card");
-		getKeys();
-		log("Signature: " + compareArrays(responseSignature, signature));
-		log("Public key: " + compareArrays(currentSmartcard.getPublicKey().getEncoded(), currentSmartcard.getPublicKey().getEncoded()));
 		/*
 		// Revert byte order.
 		for (int i = 0, j = responseSignature.length - 1; i < j; i++, j--) {

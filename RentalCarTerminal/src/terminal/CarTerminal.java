@@ -87,7 +87,7 @@ public class CarTerminal extends BaseTerminal{
 			CommandAPDU capdu = new CommandAPDU(CLA_STOP, STOP_CAR, (byte) 0, (byte) 0, NONCESIZE);
 			ResponseAPDU rapdu = sendCommandAPDU(capdu);
 			byte[] data = rapdu.getData();
-			Short nonce = bytes2short(data[0], data[1]);
+			Short nonce = bytesToShort(data[0], data[1]);
 			
 			capdu = new CommandAPDU(CLA_STOP, SET_FINAL_MILEAGE, (byte) 0, (byte) 0, getEncryptedMileage(nonce), BLOCKSIZE);
 			rapdu = sendCommandAPDU(capdu);
@@ -96,26 +96,25 @@ public class CarTerminal extends BaseTerminal{
 		}
 	}
 
-	//TODO: cant encrypt, 2 + 128 > 128
+	//TODO: check if this implementation is actually safe....
 	byte[] getEncryptedMileage(short nonce) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
-		byte[] b_nonce = short2bytes(nonce);
-		byte[] signed_mileage = rsaHandler.encrypt(private_key_ct, int2bytes(mileage));
+		byte[] bytes_nonce = shortToBytes(nonce);
+		byte[] bytes_mileage = intToBytes(mileage);
+		byte[] signed_mileage = rsaHandler.encrypt(private_key_ct, mergeByteArrays(bytes_nonce, bytes_mileage));
 		byte[] encrypted_singed_mileage = rsaHandler.encrypt(public_key_rt, signed_mileage);
-		byte[] data = mergeByteArrays(b_nonce, encrypted_singed_mileage);
-		byte[] signed_data = rsaHandler.encrypt(private_key_ct, data);
-		byte[] encrypted_signed_data = rsaHandler.encrypt(currentSmartcard.getPublicKey(), signed_data);
-		return rsaHandler.encrypt(currentSmartcard.getPublicKey(), encrypted_signed_data);
+		byte[] data = mergeByteArrays(bytes_nonce, bytes_mileage);
+		return mergeByteArrays(data, encrypted_singed_mileage);
 	}
 	
 	//TODO check if data is actually correct
-	short checkCarData(byte[] data) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
+	short checkCarData(byte[] data) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{	
 		byte[] decrypted_data = rsaHandler.decrypt(private_key_ct, data);
-		short nonce = bytes2short(decrypted_data[0], decrypted_data[1]);
-		short decrypted_car_id = bytes2short(decrypted_data[2], decrypted_data[3]);
-		short day = bytes2short(decrypted_data[4], decrypted_data[5]);
-		short month = bytes2short(decrypted_data[6], decrypted_data[7]);
-		short year = bytes2short(decrypted_data[8], decrypted_data[9]);
-		short sc_id = bytes2short(decrypted_data[10], decrypted_data[11]);
+		short nonce = bytesToShort(data[0], data[1]);		
+		short decrypted_car_id = bytesToShort(decrypted_data[2], decrypted_data[3]);
+		short day = bytesToShort(decrypted_data[4], decrypted_data[5]);
+		short month = bytesToShort(decrypted_data[6], decrypted_data[7]);
+		short year = bytesToShort(decrypted_data[8], decrypted_data[9]);
+		short sc_id = bytesToShort(decrypted_data[10], decrypted_data[11]);
 		return nonce;
 	}
 	

@@ -32,47 +32,46 @@ import encryption.RSAHandler;
 /**
  * Base class for the Terminal applications.
  * 
- * @author	Group 3
+ * @author Group 3
  */
 public class BaseTerminal extends JPanel {
 	protected static final byte[] APPLET_AID = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x01 };
-	
+
 	// Select-instruction.
 	protected static final byte INS_SELECT = (byte) 0xA4;
-	
+
 	// Error codes.
 	protected static final short SW_NO_ERROR = (short) 0x9000;
 
-	// The C-APDU that is used for selecting the applet on the card (see section 9.9 of GP Card spec v2.1.1).
+	// The C-APDU that is used for selecting the applet on the card (see section
+	// 9.9 of GP Card spec v2.1.1).
 	protected static final CommandAPDU SELECT_APDU = new CommandAPDU((byte) 0x00, (byte) 0xA4, (byte) 0x04, (byte) 0x00, APPLET_AID);
 
 	// States.
 	protected static final int STATE_INIT = 0;
 	protected static final int STATE_ISSUED = 1;
-	
-	
+
 	/** Keys Bytes */
 	private static final byte CLA_KEYS = (byte) 0xB7;
 	private static final byte KEYS_START = (byte) 0x01;
 	private static final byte GET_PUBLIC_KEY_MODULUS = (byte) 0x02;
 	private static final byte GET_PUBLIC_KEY_EXPONENT = (byte) 0x03;
-	
+
 	protected static final int BLOCKSIZE = 128;
 	protected static final int NONCESIZE = 2;
-	protected static final int SCIDSIZE = 2; 
-	
+	protected static final int SCIDSIZE = 2;
+	protected static final int MILEAGESIZE = 4;
+
 	RSAHandler rsaHandler;
 	short tempNonce;
 	public Smartcard currentSmartcard;
 
-
-
 	// Last accessed directory of file browser.
 	private File currentDir = new File(".");
-	
+
 	// Cipher used for encryption/decryption.
 	protected Cipher cipher;
-	
+
 	// The card applet.
 	protected CardChannel applet;
 
@@ -91,7 +90,7 @@ public class BaseTerminal extends JPanel {
 				TerminalFactory tf = TerminalFactory.getDefault();
 				CardTerminals ct = tf.terminals();
 				List<CardTerminal> cs = ct.list(CardTerminals.State.CARD_PRESENT);
-				
+
 				if (cs.isEmpty()) {
 					log("No terminals with a card found.");
 					return;
@@ -107,57 +106,53 @@ public class BaseTerminal extends JPanel {
 										// Select applet.
 										applet = card.getBasicChannel();
 										ResponseAPDU resp = applet.transmit(SELECT_APDU);
-										
+
 										if (resp.getSW() != 0x9000) {
 											throw new Exception("Select failed");
 										}
 
 										// Wait for the card to be removed
-										while (c.isCardPresent()) {}
-										
+										while (c.isCardPresent()) {
+										}
+
 										break;
-									}
-									catch (Exception e) {
+									} catch (Exception e) {
 										log("Card does not contain applet!");
 										sleep(2000);
 										continue;
 									}
-								}
-								catch (CardException e) {
+								} catch (CardException e) {
 									log("Couldn't connect to card!");
 									sleep(2000);
 									continue;
 								}
-							}
-							else {
+							} else {
 								log("No card present!");
 								sleep(2000);
 								continue;
 							}
 						}
-					}
-					catch (CardException e) {
+					} catch (CardException e) {
 						log("Card status problem!");
 					}
 				}
-			}
-			catch (Exception e) {
+			} catch (Exception e) {
 				log("ERROR: " + e.getMessage());
 				e.printStackTrace();
 			}
 		}
 	}
-	//TODO: check if the signature matches the key.
-	public void getKeys() throws CardException, NoSuchAlgorithmException, InvalidKeySpecException{
-		CommandAPDU capdu = new CommandAPDU(CLA_KEYS, KEYS_START, (byte) 0, (byte) 0, BLOCKSIZE);
+
+	public void getKeys() throws CardException, NoSuchAlgorithmException, InvalidKeySpecException {
+		CommandAPDU capdu = new CommandAPDU(CLA_KEYS, KEYS_START, (byte) 0, (byte) 0, SCIDSIZE + BLOCKSIZE);
 		ResponseAPDU rapdu = sendCommandAPDU(capdu);
 		currentSmartcard.setSignature(rapdu.getData());
-		
+
 		capdu = new CommandAPDU(CLA_KEYS, GET_PUBLIC_KEY_MODULUS, (byte) 0, (byte) 0, BLOCKSIZE);
 		rapdu = sendCommandAPDU(capdu);
 		byte[] modulus = rapdu.getData();
-		
-		//TODO unsure of exponent length
+
+		// TODO unsure of exponent length
 		capdu = new CommandAPDU(CLA_KEYS, GET_PUBLIC_KEY_EXPONENT, (byte) 0, (byte) 0, BLOCKSIZE);
 		rapdu = sendCommandAPDU(capdu);
 		byte[] exponent = rapdu.getData();
@@ -169,51 +164,53 @@ public class BaseTerminal extends JPanel {
 	 * 
 	 * TODO!
 	 * 
-	 * @param	ae	Event indicating a button was pressed.
+	 * @param ae
+	 *            Event indicating a button was pressed.
 	 */
 	public void actionPerformed(ActionEvent ae) {
 		try {
 			Object src = ae.getSource();
-			
+
 			//
 			// TODO!
 			//
-			
-		}
-		catch (Exception e) {
+
+		} catch (Exception e) {
 			System.out.println("Error in action listener: " + e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * Generates an instance of RSAPrivateKey from a key-file.
 	 * 
-	 * @param  filePath  The path of the key-file.
+	 * @param filePath
+	 *            The path of the key-file.
 	 * 
-	 * @return  The RSAPrivateKey instance.
+	 * @return The RSAPrivateKey instance.
 	 */
 	protected RSAPrivateKey getRSAPrivateKeyFromFile(String filePath) throws Exception {
 		byte[] data = readFile(filePath);
 		PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(data);
 		KeyFactory factory = KeyFactory.getInstance("RSA");
 		RSAPrivateKey key = (RSAPrivateKey) factory.generatePrivate(spec);
-		
+
 		return key;
 	}
-	
+
 	/**
 	 * Generates an instance of RSAPublicKey from a key-file.
 	 * 
-	 * @param  filePath  The path of the key-file.
+	 * @param filePath
+	 *            The path of the key-file.
 	 * 
-	 * @return  The RSAPublicKey instance.
+	 * @return The RSAPublicKey instance.
 	 */
 	protected RSAPublicKey getRSAPublicKeyFromFile(String filePath) throws Exception {
 		byte[] data = readFile(filePath);
 		X509EncodedKeySpec spec = new X509EncodedKeySpec(data);
 		KeyFactory factory = KeyFactory.getInstance("RSA");
 		RSAPublicKey key = (RSAPublicKey) factory.generatePublic(spec);
-		
+
 		return key;
 	}
 
@@ -232,19 +229,19 @@ public class BaseTerminal extends JPanel {
 		log(capdu);
 		ResponseAPDU rapdu = applet.transmit(capdu);
 		log(rapdu);
-		
+
 		return rapdu;
 	}
 
 	protected String toHexString(byte[] in) {
-		StringBuilder out = new StringBuilder(2*in.length);
-		for(int i = 0; i < in.length; i++) {
+		StringBuilder out = new StringBuilder(2 * in.length);
+		for (int i = 0; i < in.length; i++) {
 			out.append(String.format("%02x ", (in[i] & 0xFF)));
 		}
-		
+
 		return out.toString().toUpperCase();
 	}
-	
+
 	/**
 	 * Writes <code>obj</code> to the log.
 	 * 
@@ -278,7 +275,8 @@ public class BaseTerminal extends JPanel {
 	/**
 	 * Pops up dialog to ask user to select file and reads the file.
 	 * 
-	 * @param  String  file_path  The path of the file to read.
+	 * @param String
+	 *            file_path The path of the file to read.
 	 * 
 	 * @return byte array with contents of the file.
 	 * 
@@ -286,14 +284,14 @@ public class BaseTerminal extends JPanel {
 	 *             if file could not be read.
 	 */
 	protected byte[] readFile(String file_path) throws IOException {
-		/*JFileChooser chooser = new JFileChooser();
-		chooser.setCurrentDirectory(currentDir);
-		int n = chooser.showOpenDialog(this);
-		if (n != JFileChooser.APPROVE_OPTION) {
-			throw new IOException("No file selected");
-		}
-		File file = chooser.getSelectedFile();*/
-		
+		/*
+		 * JFileChooser chooser = new JFileChooser();
+		 * chooser.setCurrentDirectory(currentDir); int n =
+		 * chooser.showOpenDialog(this); if (n != JFileChooser.APPROVE_OPTION) {
+		 * throw new IOException("No file selected"); } File file =
+		 * chooser.getSelectedFile();
+		 */
+
 		File file = new File(file_path);
 		FileInputStream in = new FileInputStream(file);
 		int length = in.available();
@@ -316,57 +314,73 @@ public class BaseTerminal extends JPanel {
 	 */
 	protected byte[] getBytes(BigInteger big) {
 		byte[] data = big.toByteArray();
-		
+
 		if (data[0] == 0) {
 			byte[] tmp = data;
 			data = new byte[tmp.length - 1];
 			System.arraycopy(tmp, 1, data, 0, tmp.length - 1);
 		}
-		
+
 		return data;
 	}
-	
-	public static short bytes2short(byte first_byte, byte second_byte) {
+
+	public static short bytesToShort(byte first_byte, byte second_byte) {
 		ByteBuffer bb = ByteBuffer.allocate(2);
 		bb.order(ByteOrder.LITTLE_ENDIAN);
 		bb.put(first_byte);
 		bb.put(second_byte);
-	    return (short)( ((first_byte&0xFF)<<8) | (second_byte&0xFF) );
-	 } 
-	
+		return (short) (((first_byte & 0xFF) << 8) | (second_byte & 0xFF));
+	}
+
 	/**
 	 * Convert short to byte array.
 	 * 
 	 * @param s
 	 * @return
 	 */
-	public static byte[] short2bytes(short s){
+	public static byte[] shortToBytes(short s) {
 		return ByteBuffer.allocate(2).putShort(s).array();
 	}
-	
-	public static byte[] int2bytes(int i){
+
+	public static byte[] intToBytes(int i) {
 		return ByteBuffer.allocate(4).putInt(i).array();
 	}
-	
-	public static byte[] mergeByteArrays(byte[] first, byte[] second){
+
+	public static int bytesToInt(byte[] bytes) {
+		int result = 0;
+		for (int i = 0; i < 4 && i < bytes.length; i++) {
+			result <<= 8;
+			result |= (int) bytes[i] & 0xFF;
+		}
+		return result;
+	}
+
+	public static byte[] mergeByteArrays(byte[] first, byte[] second) {
 		byte[] result = new byte[first.length + second.length];
-		for (int i = 0; i < first.length; i++){
+		for (int i = 0; i < first.length; i++) {
 			result[i] = first[i];
 		}
-				
-		for (int i = 0; i < second.length; i++){
+
+		for (int i = 0; i < second.length; i++) {
 			result[first.length + i] = second[i];
 		}
-		
 		return result;
 	}
 	
-	public static boolean compareArrays(byte[] first, byte[] second){
-		if (first.length != second.length){
+	public static byte[] subArray(byte[] input, int offset, int length){
+		byte[] result = new byte[length];
+		for(int i = 0; i < length; i++){
+			result[i] = input[i + offset];
+		}
+		return result;
+	}
+
+	public static boolean compareArrays(byte[] first, byte[] second) {
+		if (first.length != second.length) {
 			return false;
 		}
-		for (int i = 0; i < first.length; i++){
-			if (first[i] != second[i]){
+		for (int i = 0; i < first.length; i++) {
+			if (first[i] != second[i]) {
 				return false;
 			}
 		}
