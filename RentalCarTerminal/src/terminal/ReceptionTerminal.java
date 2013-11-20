@@ -49,6 +49,9 @@ public class ReceptionTerminal extends BaseTerminal {
 	RSAPublicKey public_key_ct;
 	RSAPublicKey public_key_rt;
 	RSAPrivateKey private_key_rt;
+	
+	public int start_mileage;
+	public int final_mileage;
 
 	/**
 	 * Constructs the terminal application.
@@ -64,7 +67,7 @@ public class ReceptionTerminal extends BaseTerminal {
 		private_key_rt = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_rt");
 	}
 	
-	void init() throws CardException {
+	public void init() throws CardException {
 		try {
 			getKeys();
 			tempNonce++;
@@ -106,7 +109,7 @@ public class ReceptionTerminal extends BaseTerminal {
 		}
 	}
 	//TODO: real implementation
-	void read() throws CardException {
+	public void read() throws CardException {
 		try {
 			getKeys();
 			
@@ -139,7 +142,7 @@ public class ReceptionTerminal extends BaseTerminal {
 		}
 	}
 	//TODO: real implementation
-	void reset() throws CardException {
+	public void reset() throws CardException {
 		try {
 
 			CommandAPDU capdu = new CommandAPDU(CLA_RESET, RESET_CARD, (byte) 0, (byte) 0);

@@ -1,8 +1,13 @@
 package terminal;
 
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.security.interfaces.RSAPublicKey;
 
-class Smartcard{
+import encryption.RSAHandler;
+
+public class Smartcard{
 	
 	private byte[] signature;
 	private RSAPublicKey public_key;
@@ -25,6 +30,12 @@ class Smartcard{
 	}
 	public short getScId() {
 		return sc_id;
+	}
+	
+	public boolean validateSignature(RSAPublicKey pubkey) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException{
+		byte[] data = BaseTerminal.mergeByteArrays(BaseTerminal.short2bytes(sc_id), public_key.getEncoded());
+		RSAHandler rsaHandler = new RSAHandler();
+		return rsaHandler.verify(pubkey, data, signature);
 	}
 	
 }

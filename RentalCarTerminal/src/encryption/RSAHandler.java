@@ -86,15 +86,5 @@ public class RSAHandler {
 	public byte[] getKeySignature(RSAPrivateKey privateKey, Key key_to_be_signed) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException{
 		return sign(privateKey, key_to_be_signed.getEncoded());
 	}
-	
-	public byte[] encryptKeyWithPublicKey(RSAPublicKey publicKey, Key key_to_be_encrypted) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
-		return encrypt(publicKey, key_to_be_encrypted.getEncoded());
-	}
-	
-	public byte[] encryptKeyWithPrivateKey(RSAPrivateKey privateKey, Key key_to_be_encrypted) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
-		Cipher cipher = Cipher.getInstance(ENCRYPTION_ALGORITHM);
-		cipher.init(Cipher.ENCRYPT_MODE, privateKey);
-		return cipher.doFinal(key_to_be_encrypted.getEncoded());
-	}
 
 }

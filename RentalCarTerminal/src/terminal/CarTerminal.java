@@ -41,7 +41,7 @@ public class CarTerminal extends BaseTerminal{
 	
 	/** Car terminal data */
 	boolean car_may_start = false;
-	int mileage;
+	private int mileage;
 	RSAPublicKey public_key_ct;
 	RSAPublicKey public_key_rt;
 	RSAPrivateKey private_key_ct;
@@ -64,7 +64,7 @@ public class CarTerminal extends BaseTerminal{
 
 
 
-	void startCar() throws CardException {
+	public void startCar() throws CardException {
 		try {
 			getKeys();
 			
@@ -81,7 +81,7 @@ public class CarTerminal extends BaseTerminal{
 		}
 	}
 
-	void stopCar() throws CardException {
+	public void stopCar() throws CardException {
 		try {
 
 			CommandAPDU capdu = new CommandAPDU(CLA_STOP, STOP_CAR, (byte) 0, (byte) 0, NONCESIZE);
@@ -117,6 +117,14 @@ public class CarTerminal extends BaseTerminal{
 		short year = bytes2short(decrypted_data[8], decrypted_data[9]);
 		short sc_id = bytes2short(decrypted_data[10], decrypted_data[11]);
 		return nonce;
+	}
+	
+	public int getMileage() {
+		return mileage;
+	}
+
+	public void setMileage(int mileage) {
+		this.mileage = mileage;
 	}
 
 }

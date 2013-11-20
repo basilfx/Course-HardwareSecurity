@@ -148,7 +148,7 @@ public class BaseTerminal extends JPanel {
 		}
 	}
 	//TODO: check if the signature matches the key.
-	void getKeys() throws CardException, NoSuchAlgorithmException, InvalidKeySpecException{
+	public void getKeys() throws CardException, NoSuchAlgorithmException, InvalidKeySpecException{
 		CommandAPDU capdu = new CommandAPDU(CLA_KEYS, KEYS_START, (byte) 0, (byte) 0, BLOCKSIZE);
 		ResponseAPDU rapdu = sendCommandAPDU(capdu);
 		currentSmartcard.setSignature(rapdu.getData());

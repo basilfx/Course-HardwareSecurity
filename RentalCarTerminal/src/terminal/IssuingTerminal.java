@@ -32,7 +32,6 @@ public class IssuingTerminal extends BaseTerminal {
 
 	// The card applet.
 	CardChannel applet;
-	RSAPublicKey public_key_sc;
 	RSAPublicKey public_key_rt;
 	RSAPrivateKey private_key_sc;
 	RSAPrivateKey private_key_rt;
@@ -45,8 +44,7 @@ public class IssuingTerminal extends BaseTerminal {
 	 */
 	public IssuingTerminal() throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
 		super();
-		
-		public_key_sc = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_sc");
+		currentSmartcard.setPublicKey(rsaHandler.readPublicKeyFromFileSystem("keys/public_key_sc"));
 		public_key_rt = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_rt");
 		private_key_rt = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_rt");
 		private_key_sc = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_sc");
@@ -70,17 +68,17 @@ public class IssuingTerminal extends BaseTerminal {
 		log("Card ID has been set to: " + Short.toString(bytes2short(data[0], data[1])));
 		
 		// Send the public key of the SC to the SC. IS -> SC : pubkey_sc
-		byte[] modulus = getBytes(public_key_sc.getModulus());
+		byte[] modulus = getBytes(currentSmartcard.getPublicKey().getModulus());
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_MODULUS_SC, (byte) 0, (byte) 0, modulus);
 		sendCommandAPDU(capdu);		
 		
-		byte[] exponent = getBytes(public_key_sc.getPublicExponent());
+		byte[] exponent = getBytes(currentSmartcard.getPublicKey().getPublicExponent());
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_EXPONENT_SC, (byte) 0, (byte) 0, exponent);
 		sendCommandAPDU(capdu);
 		
 		
 		// Send signature. IS -> SC : {|sc_id, pubkey_sc|}privkey_rt
-		byte[] mergedData = mergeByteArrays(short2bytes(smartCardId), public_key_sc.getEncoded());
+		byte[] mergedData = mergeByteArrays(short2bytes(smartCardId), currentSmartcard.getPublicKey().getEncoded());
 		byte[] signature = rsaHandler.sign(private_key_rt, mergedData);
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_SIGNATURE, (byte) 0, (byte) 0, signature, BLOCKSIZE);
 		rapdu = sendCommandAPDU(capdu);
@@ -93,7 +91,7 @@ public class IssuingTerminal extends BaseTerminal {
 		log("Comparing send data with data on smart card");
 		getKeys();
 		log("Signature: " + compareArrays(responseSignature, signature));
-		log("Public key: " + compareArrays(public_key_sc.getEncoded(), currentSmartcard.getPublicKey().getEncoded()));
+		log("Public key: " + compareArrays(currentSmartcard.getPublicKey().getEncoded(), currentSmartcard.getPublicKey().getEncoded()));
 		/*
 		// Revert byte order.
 		for (int i = 0, j = responseSignature.length - 1; i < j; i++, j--) {
