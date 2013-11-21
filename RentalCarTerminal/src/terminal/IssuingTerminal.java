@@ -88,15 +88,6 @@ public class IssuingTerminal extends BaseTerminal {
 		log("Sent signature: " + new String(signature));
 		log("Retrieved signature: " + new String(responseSignature));
 		
-		/*
-		// Revert byte order.
-		for (int i = 0, j = responseSignature.length - 1; i < j; i++, j--) {
-		    byte b = responseSignature[i];
-		    responseSignature[i] = responseSignature[j];
-		    responseSignature[j] = b;
-		}
-		*/
-		
 		boolean verified = rsaHandler.verify(public_key_rt, mergedData, responseSignature);
 		log("Has the signature correctly been set? : " + Boolean.toString(verified));
 		

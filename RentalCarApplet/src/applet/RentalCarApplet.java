@@ -216,10 +216,12 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 			case SET_PUBLIC_KEY_SIGNATURE:
 				// Store the signature of the RT.
 				Util.arrayCopy(tmp, (short) 0, signatureRT, (short) 0, lc);
-				apdu.setOutgoing();//Volgensmij verwijderd deze methode een deel van de buffer, dus eerst deze methode aanroepen, dan de buffer aanpassen.
+				
 				// Send signature as a response for debugging info.
-				buf = signatureRT;//Ik weet niet of dit wel mag, het lijkt me beter om Util.arrayCopy te gebruiken
-				apdu.sendBytes((short)0,(short)128);
+				apdu.setOutgoing();				
+				Util.arrayCopy(signatureRT, (short) 0, buf, (short) 0, (short) 128);				
+				apdu.setOutgoingLength((short) 128);				
+				apdu.sendBytes((short) 0, (short) 128);
 				
 				break;
 			case SET_PUBLIC_KEY_MODULUS_SC:
@@ -232,7 +234,7 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 				break;
 			case SET_SC_ID:
 				// Store the ID of the SC.
-				cardId = Util.getShort(tmp, (short)0);
+				cardId = Util.getShort(tmp, (short) 0);
 				
 				// Send cardId as a response for debugging info.
 				buf[0] = (byte) ((cardId >> 8) & 0xff);
