@@ -71,11 +71,17 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	private static final short SCIDSIZE = (short) 2;
 	private static final short NONCESIZE = (short) 2;
 	
+	/** Exceptions */
+	private static final short NONCE_FAILURE = (short) 37000;
+	
 	// Temporary buffer in RAM.
 	byte[] tmp;
 
 	// The applet state (INIT or ISSUED).
 	byte state;
+	
+	// Is used to send a unique nonce, increment before use!
+	short nonce;
 	
 	// Cipher for encryption and decryption.
 	Cipher cipher;
@@ -88,6 +94,9 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 
 	// pubkey_rt.
 	RSAPublicKey pubKeyRT;
+	
+	// pubkey_ct.
+	RSAPublicKey pubKeyCT;
 	
 	// sc_id.
 	private short cardId;
@@ -107,12 +116,16 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		privKeySC = (RSAPrivateKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PRIVATE, KeyBuilder.LENGTH_RSA_1024, false);
 		pubKeySC = (RSAPublicKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PUBLIC, KeyBuilder.LENGTH_RSA_1024, false);
 		pubKeyRT = (RSAPublicKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PUBLIC, KeyBuilder.LENGTH_RSA_1024, false);
+		pubKeyCT = (RSAPublicKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PUBLIC, KeyBuilder.LENGTH_RSA_1024, false);
 		
 		// Initialize signature.
 		signatureRT = new byte[128];
 		
 		// Initialize state.
 		state = STATE_INIT;
+		
+		//Set nonce to 0
+		nonce = 0;
 		
 		// Register this applet instance with the JCRE.
 		register();
@@ -140,7 +153,7 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 						issue(apdu, ins, lc);
 						break;
 					case CLA_INIT:
-						init(ins);
+						init(apdu, ins, lc);
 						break;
 					case CLA_READ:
 						read(ins);
@@ -251,20 +264,32 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		}
 	}
 
-	private void init(byte ins) {
+	private void init(APDU apdu, byte ins, short lc) {
+		
+		byte[] buf = apdu.getBuffer();
+		
 		switch (ins) {
 		case INIT_START:
-			// decrypt nonce with private_key_sc
-			// send decrypted nonce
+			Util.arrayCopy(buf, (short) 0, tmp, (short) 0, lc);
+			apdu.setOutgoing();
+			cipher.init(privKeySC,Cipher.MODE_DECRYPT);
+            cipher.doFinal(tmp,(short)0,(short)2,buf,(short)0);
+            apdu.sendBytes((short)0,NONCESIZE);
 			break;
 
 		case INIT_AUTHENTICATED:
-			// generate nonce
-			// store nonce
-			// send nonce
+			nonce++;
+			apdu.setOutgoing();
+			Util.setShort(tmp, (short) 0, nonce);
+			cipher.init(pubKeyRT,Cipher.MODE_ENCRYPT);
+			cipher.doFinal(tmp,(short)0,(short)2,buf,(short)0);
+			apdu.sendBytes((short)0,NONCESIZE);
 			break;
 		case INIT_SECOND_NONCE:
-			// if received_nonce == stored_nonce continue, else exception
+			short received_nonce = Util.getShort(buf, (short)0);
+			if (received_nonce != nonce){
+				ISOException.throwIt(NONCE_FAILURE);
+			}
 			break;
 		case INIT_SET_SIGNED_CAR_KEY_MODULUS:
 			// store car key modulus

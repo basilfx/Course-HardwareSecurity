@@ -11,9 +11,11 @@ import terminal.BaseTerminal;
 
 public class GeneralTest {
 	
-	short test = 9536;
-	byte first = 0x25;
-	byte second = 0x40;
+	short short_test = 9536;
+	byte short_first = 0x25;
+	byte short_second = 0x40;
+	int int_test = 123456789;
+	byte[] int_test_bytes = {(byte)0x07, (byte)0x5b, (byte)0xcd, (byte)0x15}; 
 	String testString = "JUnit provides static methods in the Assert class to test for certain conditions.";
 	byte[] testData = testString.getBytes();
 
@@ -27,28 +29,38 @@ public class GeneralTest {
 	}
 	
 	@Test
-	public void testBytes2ShortCorrect(){
-		assertEquals("Bytes 2 short test correct",test, BaseTerminal.bytesToShort(first, second));
+	public void testBytesToShortCorrect(){
+		assertEquals("Bytes To short test correct",short_test, BaseTerminal.bytesToShort(short_first, short_second));
 	}
 	
 	@Test
-	public void testBytes2ShortIncorrect(){
-		assertFalse("Bytes 2 short test incorrect",BaseTerminal.bytesToShort(first, second) == (test+1));
+	public void testBytesToShortIncorrect(){
+		assertFalse("Bytes To short test incorrect",BaseTerminal.bytesToShort(short_first, short_second) == (short_test+1));
 	}
 	
 	@Test
-	public void testShort2BytesCorrect(){
-		byte[] bytes = BaseTerminal.shortToBytes(test);
-		assertEquals("Short 2 bytes correct, first byte", first, bytes[0]);
-		assertEquals("Short 2 bytes correct, second byte", second, bytes[1]);
+	public void testShortToBytesCorrect(){
+		byte[] bytes = BaseTerminal.shortToBytes(short_test);
+		assertEquals("Short To bytes correct, first byte", short_first, bytes[0]);
+		assertEquals("Short To bytes correct, second byte", short_second, bytes[1]);
 	}
 	
 	@Test
-	public void testShort2BytesIncorrect(){
-		byte[] bytes = BaseTerminal.shortToBytes(test);
-		assertFalse("Short 2 bytes incorrect, first byte", first == bytes[1]);
-		assertFalse("Short 2 bytes incorrect, second byte", second == bytes[0]);
+	public void testShortToBytesIncorrect(){
+		byte[] bytes = BaseTerminal.shortToBytes(short_test);
+		assertFalse("Short To bytes incorrect, first byte", short_first == bytes[1]);
+		assertFalse("Short To bytes incorrect, second byte", short_second == bytes[0]);
 	}
+	
+	@Test
+	public void testIntToBytesCorrect(){
+		assertTrue("Int to Bytes test correct", BaseTerminal.compareArrays(int_test_bytes, BaseTerminal.intToBytes(int_test)));
+	}
+	
+	@Test
+	public void testBytesToIntCorrect(){
+		assertEquals("Short To bytes correct, second byte", int_test, BaseTerminal.bytesToInt(int_test_bytes));
+	}	
 	
 	@Test
 	public void testMergeCorrect(){
@@ -63,6 +75,6 @@ public class GeneralTest {
 		String string = "random";
 		byte[] test1 = BaseTerminal.mergeByteArrays(testData, string.getBytes());
 		assertFalse("Test merge arrays correct", AllTests.compareArrays(test1, testString.getBytes()));
-	}
+	}	
 	
 }
