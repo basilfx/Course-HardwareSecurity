@@ -40,7 +40,8 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	private static final byte INIT_SECOND_NONCE = (byte) 0x03;
 	private static final byte INIT_SET_SIGNED_CAR_KEY_MODULUS = (byte) 0x04;
 	private static final byte INIT_SET_SIGNED_CAR_KEY_EXPONENT = (byte) 0x05;
-	private static final byte INIT_SET_SIGNED_ENCRYPTED_CAR_DATA = (byte) 0x06;
+	private static final byte INIT_CHECK_CAR_KEY_SIGNATURE = (byte) 0x06;
+	private static final byte INIT_SET_SIGNED_ENCRYPTED_CAR_DATA = (byte) 0x07;
 
 	/** Read Bytes */
 	private static final byte CLA_READ = (byte) 0xB3;
@@ -292,10 +293,26 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 			}
 			break;
 		case INIT_SET_SIGNED_CAR_KEY_MODULUS:
-			// store car key modulus
+			//Clear the key
+
+			//Store the length of the modulus as the first 2 bytes in the tmp array
+			Util.setShort(tmp,(short) 0 , lc);
+			//Store the modulus in tmp
+			Util.arrayCopy(buf, (short) 0, tmp, (short) 2, lc);
 			break;
 		case INIT_SET_SIGNED_CAR_KEY_EXPONENT:
-			// store car key exponent
+			//Get the length of the modulus as the first 2 bytes in the tmp array
+			short length = Util.getShort(tmp, (short)0);
+			//Set the length of the exponent as the first 2 bytes after the modulus
+			Util.setShort(tmp,(short)(2 + length), lc);
+			//Store the exponent in tmp
+			Util.arrayCopy(buf, (short) 0, tmp, (short)(4 + length), lc);			
+		case INIT_CHECK_CAR_KEY_SIGNATURE:
+			short modulus_length = Util.getShort(tmp, (short)0);
+			short exponent_length = Util.getShort(tmp, (short)(modulus_length + 2));
+			//Check signature
+			pubKeyCT.setModulus(tmp, (short)2, modulus_length);
+			pubKeyCT.setExponent(tmp, (short)(4 + modulus_length), exponent_length);
 		case INIT_SET_SIGNED_ENCRYPTED_CAR_DATA:
 			// store car data
 			break;

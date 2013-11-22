@@ -31,7 +31,8 @@ public class ReceptionTerminal extends BaseTerminal {
 	private static final byte INIT_SECOND_NONCE = (byte) 0x03;
 	private static final byte INIT_SET_SIGNED_CAR_KEY_MODULUS = (byte) 0x04;
 	private static final byte INIT_SET_SIGNED_CAR_KEY_EXPONENT = (byte) 0x05;
-	private static final byte INIT_SET_SIGNED_ENCRYPTED_CAR_DATA = (byte) 0x06;
+	private static final byte INIT_CHECK_CAR_KEY_SIGNATURE = (byte) 0x06;
+	private static final byte INIT_SET_SIGNED_ENCRYPTED_CAR_DATA = (byte) 0x07;
 
 	/** Read Bytes */
 	private static final byte CLA_READ = (byte) 0xB3;
