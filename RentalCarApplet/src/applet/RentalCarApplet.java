@@ -38,8 +38,8 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	private static final byte INIT_START = (byte) 0x01;
 	private static final byte INIT_AUTHENTICATED = (byte) 0x02;
 	private static final byte INIT_SECOND_NONCE = (byte) 0x03;
-	private static final byte INIT_SET_SIGNED_CAR_KEY_MODULUS = (byte) 0x04;
-	private static final byte INIT_SET_SIGNED_CAR_KEY_EXPONENT = (byte) 0x05;
+	private static final byte INIT_SET_CAR_KEY_MODULUS = (byte) 0x04;
+	private static final byte INIT_SET_CAR_KEY_EXPONENT = (byte) 0x05;
 	private static final byte INIT_CHECK_CAR_KEY_SIGNATURE = (byte) 0x06;
 	private static final byte INIT_SET_SIGNED_ENCRYPTED_CAR_DATA = (byte) 0x07;
 
@@ -73,7 +73,8 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	private static final short NONCESIZE = (short) 2;
 	
 	/** Exceptions */
-	private static final short NONCE_FAILURE = (short) 37000;
+	private static final short NONCE_FAILURE = (short) 13000;
+	private static final short SIGNATURE_FAILURE = (short) 13001;
 	
 	// Temporary buffer in RAM.
 	byte[] tmp;
@@ -104,6 +105,18 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	
 	// {|sc_id, pubkey_sc|}privkey_rt.
 	private byte[] signatureRT;
+	
+	// Car data, start mileage and final mileage
+	private byte[] car_data;
+	private byte[] start_mileage;
+	private byte[] final_mileage;
+	
+	// boolean which indicates whether the car is started
+	private boolean started;
+	
+	// Boolean which indicates whether the car has been started atleast once
+	private boolean has_been_started;
+	
 
 	public static void install(byte[] bArray, short bOffset, byte bLength) throws SystemException {
 		new RentalCarApplet();
@@ -122,11 +135,19 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		// Initialize signature.
 		signatureRT = new byte[128];
 		
+		// Initialize car data, start mileage and final mileage
+		car_data = new byte[128];
+		start_mileage = new byte[128];
+		final_mileage = new byte[128];
+		
 		// Initialize state.
 		state = STATE_INIT;
 		
 		//Set nonce to 0
 		nonce = 0;
+		
+		started = false;
+		has_been_started = false;
 		
 		// Register this applet instance with the JCRE.
 		register();
@@ -157,16 +178,16 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 						init(apdu, ins, lc);
 						break;
 					case CLA_READ:
-						read(ins);
+						read(apdu, ins, lc);
 						break;
 					case CLA_RESET:
-						reset(ins);
+						reset(apdu, ins, lc);
 						break;
 					case CLA_START:
-						start(ins);
+						start(apdu, ins, lc);
 						break;
 					case CLA_STOP:
-						stop(ins);
+						stop(apdu, ins, lc);
 						break;
 					case CLA_KEYS:
 						keys(apdu, ins, lc);
@@ -294,53 +315,74 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 				ISOException.throwIt(NONCE_FAILURE);
 			}
 			break;
-		case INIT_SET_SIGNED_CAR_KEY_MODULUS:
-			//Clear the key
-
+		case INIT_SET_CAR_KEY_MODULUS:
 			//Store the length of the modulus as the first 2 bytes in the tmp array
 			Util.setShort(tmp,(short) 0 , lc);
-			//Store the modulus in tmp
-			Util.arrayCopy(buf, (short) 0, tmp, (short) 2, lc);
+			//Store the modulus in tmp at position 4
+			Util.arrayCopy(buf, (short) 0, tmp, (short) 4, lc);
 			break;
-		case INIT_SET_SIGNED_CAR_KEY_EXPONENT:
+		case INIT_SET_CAR_KEY_EXPONENT:
 			//Get the length of the modulus as the first 2 bytes in the tmp array
 			short length = Util.getShort(tmp, (short)0);
 			//Set the length of the exponent as the first 2 bytes after the modulus
-			Util.setShort(tmp,(short)(2 + length), lc);
+			Util.setShort(tmp,(short) 2, lc);
 			//Store the exponent in tmp
 			Util.arrayCopy(buf, (short) 0, tmp, (short)(4 + length), lc);			
 		case INIT_CHECK_CAR_KEY_SIGNATURE:
 			short modulus_length = Util.getShort(tmp, (short)0);
-			short exponent_length = Util.getShort(tmp, (short)(modulus_length + 2));
+			short exponent_length = Util.getShort(tmp, (short)2);
 			//Check signature
-			pubKeyCT.setModulus(tmp, (short)2, modulus_length);
-			pubKeyCT.setExponent(tmp, (short)(4 + modulus_length), exponent_length);
+			Signature instance = Signature.getInstance(Signature.ALG_RSA_SHA_PKCS1, false);
+			boolean verified = instance.verify(tmp, (short)4, (short)(modulus_length + exponent_length), buf, (short)0, lc);
+			if (verified) {
+				pubKeyCT.setModulus(tmp, (short)4, modulus_length);
+				pubKeyCT.setExponent(tmp, (short)(4 + modulus_length), exponent_length);
+			} else {
+				ISOException.throwIt(SIGNATURE_FAILURE);
+			}
+			
 		case INIT_SET_SIGNED_ENCRYPTED_CAR_DATA:
-			// store car data
+			// decrypt the car data and store it
+			Util.arrayCopy(buf, (short)0, car_data, (short)0, BLOCKSIZE);
 			break;
 		default:
 			ISOException.throwIt(SW_INS_NOT_SUPPORTED);
 		}
 	}
 
-	private void read(byte ins) {
+	
+	private void read(APDU apdu, byte ins, short lc) {
+		byte[] buf = apdu.getBuffer();		
 		switch (ins) {
 		case READ_MILEAGE_SIGNED_NONCE:
-			// decrypt nonce with private_key_sc
-			// send nonce
+			// decrypt nonce with private_key_sc and send it
+			cipher.init(privKeySC, Cipher.MODE_DECRYPT);
+			cipher.doFinal(buf, (short)0, NONCESIZE, tmp, (short)0);
+			apdu.setOutgoing();				
+			Util.arrayCopy(tmp, (short) 0, buf, (short) 0, NONCESIZE);
+			apdu.setOutgoingLength((short) NONCESIZE);				
+			apdu.sendBytes((short) 0, (short) NONCESIZE);
 			break;
 		case READ_MILEAGE_START_MILEAGE:
 			// send start mileage
+			apdu.setOutgoing();
+			Util.arrayCopy(start_mileage, (short) 0, buf, (short) 0, BLOCKSIZE);
+			apdu.setOutgoingLength((short) BLOCKSIZE);				
+			apdu.sendBytes((short) 0, (short) BLOCKSIZE);
 			break;
 		case READ_MILEAGE_FINAL_MILEAGE:
 			// send final mileage
+			apdu.setOutgoing();
+			Util.arrayCopy(final_mileage, (short) 0, buf, (short) 0, BLOCKSIZE);
+			apdu.setOutgoingLength((short) BLOCKSIZE);				
+			apdu.sendBytes((short) 0, (short) BLOCKSIZE);
 			break;
 		default:
 			ISOException.throwIt(SW_INS_NOT_SUPPORTED);
 		}
 	}
-
-	private void reset(byte ins) {
+	//TODO: we vertrouwen nu op de garbage collector om de velden te resetten, misschien geen goed idee.
+	private void reset(APDU apdu, byte ins, short lc) {
 		switch (ins) {
 		case RESET_CARD:
 			// started = false
@@ -348,35 +390,60 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 			// start_mileage = 0
 			// public_key_ct = 0
 			// car_data = 0
+			started = false;
+			has_been_started = false;
+			final_mileage = new byte[128];
+			start_mileage = new byte[128];
+			pubKeyCT.clearKey();
+			car_data = new byte[128];
 			break;
 		default:
 			ISOException.throwIt(SW_INS_NOT_SUPPORTED);
 		}
 	}
 
-	private void start(byte ins) {
+	private void start(APDU apdu, byte ins, short lc) {
+		byte[] buf = apdu.getBuffer();		
 		switch (ins) {
 		case SET_START_MILEAGE:
 			// started = true
+			started = true;
 			// if start_mileage == 0, start_mileage = received_start_mileage
-			// send encrypt(public_key_sc, {nonce + car_data})
+			if (!has_been_started){
+				Util.arrayCopy(buf, (short)0, start_mileage, (short)0, BLOCKSIZE);
+				has_been_started = true;
+			}
+			// send car data			
+			apdu.setOutgoing();				
+			Util.arrayCopy(car_data, (short) 0, buf, (short) 0, BLOCKSIZE);
+			apdu.setOutgoingLength((short) BLOCKSIZE);				
+			apdu.sendBytes((short) 0, (short) BLOCKSIZE);
+			
 			break;
 		default:
 			ISOException.throwIt(SW_INS_NOT_SUPPORTED);
 		}
 	}
-
-	private void stop(byte ins) {
+	//TODO: nonce wordt niet gechecked atm, moet dus nog gebeuren
+	private void stop(APDU apdu, byte ins, short lc) {
+		byte[] buf = apdu.getBuffer();
 		switch (ins) {
 		case STOP_CAR:
-			// generate new nonce
-			// store nonce
+			// increment nonce
+			nonce++;
 			// send nonce
+			apdu.setOutgoing();				
+			Util.setShort(buf, (short)0, nonce);
+			apdu.setOutgoingLength((short) NONCESIZE);				
+			apdu.sendBytes((short) 0, (short) NONCESIZE);
 			break;
 		case SET_FINAL_MILEAGE:
 			// decrypt(public_key_sc {nonce + final_mileage})
 			// if received_nonce == stored_nonce continue, else exception
 			// store final_mileage
+			started = false;
+			Util.arrayCopy(buf, (short)0, final_mileage, (short)0, BLOCKSIZE);
+			
 			break;
 		default:
 			ISOException.throwIt(SW_INS_NOT_SUPPORTED);

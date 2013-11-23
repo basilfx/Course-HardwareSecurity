@@ -29,8 +29,8 @@ public class ReceptionTerminal extends BaseTerminal {
 	private static final byte INIT_START = (byte) 0x01;
 	private static final byte INIT_AUTHENTICATED = (byte) 0x02;
 	private static final byte INIT_SECOND_NONCE = (byte) 0x03;
-	private static final byte INIT_SET_SIGNED_CAR_KEY_MODULUS = (byte) 0x04;
-	private static final byte INIT_SET_SIGNED_CAR_KEY_EXPONENT = (byte) 0x05;
+	private static final byte INIT_SET_CAR_KEY_MODULUS = (byte) 0x04;
+	private static final byte INIT_SET_CAR_KEY_EXPONENT = (byte) 0x05;
 	private static final byte INIT_CHECK_CAR_KEY_SIGNATURE = (byte) 0x06;
 	private static final byte INIT_SET_SIGNED_ENCRYPTED_CAR_DATA = (byte) 0x07;
 
@@ -95,15 +95,22 @@ public class ReceptionTerminal extends BaseTerminal {
 			rapdu = sendCommandAPDU(capdu);
 			data = rapdu.getData();
 			
-			byte[] signed_car_public_key_modulus = rsaHandler.encrypt(private_key_rt, public_key_ct.getModulus().toByteArray());
-			capdu = new CommandAPDU(CLA_INIT, INIT_SET_SIGNED_CAR_KEY_MODULUS, (byte) 0, (byte) 0, signed_car_public_key_modulus);
+			byte[] car_public_key_modulus = rsaHandler.encrypt(private_key_rt, public_key_ct.getModulus().toByteArray());
+			capdu = new CommandAPDU(CLA_INIT, INIT_SET_CAR_KEY_MODULUS, (byte) 0, (byte) 0, car_public_key_modulus);
 			rapdu = sendCommandAPDU(capdu);
 			data = rapdu.getData();
 			
-			byte[] signed_car_public_key_exponent = rsaHandler.encrypt(private_key_rt, public_key_ct.getPublicExponent().toByteArray());
-			capdu = new CommandAPDU(CLA_INIT, INIT_SET_SIGNED_CAR_KEY_EXPONENT, (byte) 0, (byte) 0, signed_car_public_key_exponent);
+			byte[] car_public_key_exponent = rsaHandler.encrypt(private_key_rt, public_key_ct.getPublicExponent().toByteArray());
+			capdu = new CommandAPDU(CLA_INIT, INIT_SET_CAR_KEY_EXPONENT, (byte) 0, (byte) 0, car_public_key_exponent);
 			rapdu = sendCommandAPDU(capdu);
 			data = rapdu.getData();
+			
+			byte[] car_public_key = mergeByteArrays(car_public_key_modulus, car_public_key_exponent);
+			byte[] signature = rsaHandler.sign(private_key_rt, car_public_key);
+			capdu = new CommandAPDU(CLA_INIT, INIT_CHECK_CAR_KEY_SIGNATURE, (byte) 0, (byte) 0, signature);
+			rapdu = sendCommandAPDU(capdu);
+			data = rapdu.getData();
+			
 			
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_SIGNED_ENCRYPTED_CAR_DATA, (byte) 0, (byte) 0, getEncryptedCarData());
 			rapdu = sendCommandAPDU(capdu);
@@ -173,15 +180,16 @@ public class ReceptionTerminal extends BaseTerminal {
 		}
 	}
 	//TODO fix hardcoded values
-	byte[] getEncryptedCarData(){
-		tempNonce++;
+	byte[] getEncryptedCarData() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
+		tempNonce++;	
 		short car_id = 12;
-		byte[] date = new byte[3];
+		byte[] date = new byte[3];		
 		date[0] = 15;
 		date[1] = 11;
-		date[2] = 13;
-		byte[] data = mergeByteArrays(shortToBytes(tempNonce), date);
-		return mergeByteArrays(data, shortToBytes(car_id));
+		date[2] = 13;		
+		byte[] data = mergeByteArrays(shortToBytes(tempNonce), shortToBytes(car_id));
+		byte[] car_data = mergeByteArrays(data, date);
+		return rsaHandler.encrypt(private_key_rt, car_data);
 	}
 	
 	

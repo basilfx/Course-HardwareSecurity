@@ -100,15 +100,13 @@ public class CarTerminal extends BaseTerminal{
 	byte[] getEncryptedMileage(short nonce) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
 		byte[] bytes_nonce = shortToBytes(nonce);
 		byte[] bytes_mileage = intToBytes(mileage);
-		byte[] signed_mileage = rsaHandler.encrypt(private_key_ct, mergeByteArrays(bytes_nonce, bytes_mileage));
-		byte[] encrypted_singed_mileage = rsaHandler.encrypt(public_key_rt, signed_mileage);
-		byte[] data = mergeByteArrays(bytes_nonce, bytes_mileage);
-		return mergeByteArrays(data, encrypted_singed_mileage);
+		byte[] encrypted_mileage = rsaHandler.encrypt(public_key_rt, mergeByteArrays(bytes_nonce, bytes_mileage));
+		return encrypted_mileage;
 	}
 	
 	//TODO check if data is actually correct
 	short checkCarData(byte[] data) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{	
-		byte[] decrypted_data = rsaHandler.decrypt(private_key_ct, data);
+		byte[] decrypted_data = rsaHandler.decrypt(public_key_rt, data);
 		short nonce = bytesToShort(data[0], data[1]);		
 		short decrypted_car_id = bytesToShort(decrypted_data[2], decrypted_data[3]);
 		short day = bytesToShort(decrypted_data[4], decrypted_data[5]);
