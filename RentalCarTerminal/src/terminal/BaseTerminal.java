@@ -74,6 +74,8 @@ public class BaseTerminal extends JPanel {
 
 	// The card applet.
 	protected CardChannel applet;
+	
+	private boolean running;
 
 	/**
 	 * Constructs the terminal application.
@@ -81,6 +83,7 @@ public class BaseTerminal extends JPanel {
 	public BaseTerminal() {
 		rsaHandler = new RSAHandler();
 		currentSmartcard = new Smartcard();
+		running = true;
 		(new CardThread()).start();
 	}
 
@@ -96,7 +99,7 @@ public class BaseTerminal extends JPanel {
 					return;
 				}
 
-				while (true) {
+				while (running) {
 					try {
 						for (CardTerminal c : cs) {
 							if (c.isCardPresent()) {
@@ -112,7 +115,7 @@ public class BaseTerminal extends JPanel {
 										}
 
 										// Wait for the card to be removed
-										while (c.isCardPresent()) {
+										while (c.isCardPresent() && running) {
 										}
 
 										break;
@@ -146,7 +149,17 @@ public class BaseTerminal extends JPanel {
 	public void getKeys() throws CardException, NoSuchAlgorithmException, InvalidKeySpecException {
 		CommandAPDU capdu = new CommandAPDU(CLA_KEYS, KEYS_START, (byte) 0, (byte) 0, SCIDSIZE + BLOCKSIZE);
 		ResponseAPDU rapdu = sendCommandAPDU(capdu);
-		currentSmartcard.setSignature(rapdu.getData());
+		
+		byte[] data = rapdu.getData();
+		
+		log("Card ID has been read by getKeys(): " + Short.toString(bytesToShort(data[0], data[1])));
+		
+		// The first two bytes of the response represent the SC ID.
+		currentSmartcard.setScId(bytesToShort(data[0], data[1]));
+		
+		// The second to 130th byte represent the signature.
+		currentSmartcard.setSignature(subArray(data, 2, BLOCKSIZE));
+		
 
 		capdu = new CommandAPDU(CLA_KEYS, GET_PUBLIC_KEY_MODULUS, (byte) 0, (byte) 0, BLOCKSIZE);
 		rapdu = sendCommandAPDU(capdu);
@@ -157,6 +170,8 @@ public class BaseTerminal extends JPanel {
 		rapdu = sendCommandAPDU(capdu);
 		byte[] exponent = rapdu.getData();
 		currentSmartcard.setPublicKey(rsaHandler.getPublicKeyFromModulusExponent(modulus, exponent));
+		
+		log("pubkey_sc has been read by getKeys(). Modulus: " + currentSmartcard.getPublicKey().getModulus().toString() + ", exponent: " + currentSmartcard.getPublicKey().getPublicExponent().toString());
 	}
 
 	/**
@@ -385,5 +400,9 @@ public class BaseTerminal extends JPanel {
 			}
 		}
 		return true;
+	}
+	
+	public void stopRunning() {
+		running = false;
 	}
 }

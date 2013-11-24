@@ -37,7 +37,8 @@ public class ProtocolDemo {
 	 */
 	public static void main(String[] arg) throws InterruptedException, NoSuchAlgorithmException, InvalidKeySpecException, IOException {
 		ProtocolDemo demo = new ProtocolDemo();
-		IssuingTerminal terminal = new IssuingTerminal();
+		IssuingTerminal terminalIT = new IssuingTerminal();
+		ReceptionTerminal terminalRT = new ReceptionTerminal();
 		
 		
 		// Wait 2 seconds so that the smart card can be selected.
@@ -46,7 +47,20 @@ public class ProtocolDemo {
 		System.out.println("proceed...");
 		
 		try {
-			terminal.issueCard(demo.getSmartCartId());
+			System.out.println("-----------------");
+			System.out.println("INITIATING THE ISSUE-PHASE");
+			System.out.println("-----------------");
+			
+			terminalIT.issueCard(demo.getSmartCartId());
+			terminalIT.stopRunning();
+			
+			System.out.println("-----------------");
+			System.out.println("INITIATING THE INIT-PHASE");
+			System.out.println("-----------------");
+			Thread.sleep(1000);
+			
+			terminalRT.initCard();
+			terminalRT.stopRunning();
 		}
 		catch (Exception e) {
 			System.out.println("[Error] Exception in ProtocolDemo: " + e.getMessage());

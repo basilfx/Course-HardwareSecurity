@@ -69,12 +69,28 @@ public class IssuingTerminal extends BaseTerminal {
 		
 		// Send the public key of the SC to the SC. IS -> SC : pubkey_sc
 		byte[] modulus = getBytes(currentSmartcard.getPublicKey().getModulus());
-		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_MODULUS_SC, (byte) 0, (byte) 0, modulus);
-		sendCommandAPDU(capdu);		
+		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_MODULUS_SC, (byte) 0, (byte) 0, modulus, BLOCKSIZE);
+		rapdu = sendCommandAPDU(capdu);
+		
+		byte[] modulusResponse = rapdu.getData();
+		if (modulus == modulusResponse) {
+			log("pubkey_sc modulus has been set to: " + currentSmartcard.getPublicKey().getModulus().toString());
+		}
+		else {
+			log("pubkey_sc modulus has NOT CORRECTLY BEEN SET!: " + new String(modulus) + " does not equal received " + new String(modulusResponse));
+		}
 		
 		byte[] exponent = getBytes(currentSmartcard.getPublicKey().getPublicExponent());
-		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_EXPONENT_SC, (byte) 0, (byte) 0, exponent);
-		sendCommandAPDU(capdu);
+		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_EXPONENT_SC, (byte) 0, (byte) 0, exponent, BLOCKSIZE);
+		rapdu = sendCommandAPDU(capdu);
+		
+		byte[] exponentResponse = rapdu.getData();
+		if (exponent == exponentResponse) {
+			log("pubkey_sc exponent has been set to: " + currentSmartcard.getPublicKey().getPublicExponent().toString());
+		}
+		else {
+			log("pubkey_sc exponent has NOT CORRECTLY BEEN SET!: " + new String(exponent) + " does not equal received " + new String(exponentResponse));
+		}
 		
 		
 		// Send signature. IS -> SC : {|sc_id, pubkey_sc|}privkey_rt

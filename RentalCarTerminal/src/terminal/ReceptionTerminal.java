@@ -72,19 +72,34 @@ public class ReceptionTerminal extends BaseTerminal {
 		private_key_rt = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_rt");
 	}
 	
-	public void init() throws CardException {
+	public void initCard() throws CardException {
 		try {
 			getKeys();
-			tempNonce++;
-			CommandAPDU capdu = new CommandAPDU(CLA_INIT, INIT_START, (byte) 0, (byte) 0, shortToBytes(tempNonce), NONCESIZE);
+			
+			
+			//
+			// TODO!!
+			//
+			// Because pubkey_sc is known to the public (the APDU's in the getKeys() method can be forged by everyone), we should
+			// make it infeasible for an attacker to pre-compute {|N1|}pubkey_sc for every (or a substantial part of) the possible N1's.
+			// N1 should therefore be a large random number or text.
+			/*tempNonce++;
+			
+			short test = (short) 1000;
+				
+			CommandAPDU capdu = new CommandAPDU(CLA_INIT, INIT_START, (byte) 0, (byte) 0, shortToBytes(test), 2);
 			ResponseAPDU rapdu = sendCommandAPDU(capdu);
 			byte[] data = rapdu.getData();
 			short received_nonce = bytesToShort(data[0], data[1]);
 			if (tempNonce == received_nonce){//TODO
 				// were fine!
+				log("The nonces match! The SC is now authenticated to the RT.");
 			} else {
 				//Oh noes!, throw exception or something
+				log("ERROR! The nonces do not match! The SC has not been authenticated to the RT.");
 			}
+			
+			/*
 			capdu = new CommandAPDU(CLA_INIT, INIT_AUTHENTICATED, (byte) 0, (byte) 0, BLOCKSIZE);
 			rapdu = sendCommandAPDU(capdu);
 			byte[] encrypted_nonce = rapdu.getData();
@@ -115,7 +130,7 @@ public class ReceptionTerminal extends BaseTerminal {
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_SIGNED_ENCRYPTED_CAR_DATA, (byte) 0, (byte) 0, getEncryptedCarData());
 			rapdu = sendCommandAPDU(capdu);
 			data = rapdu.getData();
-			
+			*/
 		} catch (Exception e) {
 			throw new CardException(e.getMessage());
 		}

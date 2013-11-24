@@ -165,40 +165,37 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		byte[] buf = apdu.getBuffer();
 		byte ins = buf[OFFSET_INS];
 		byte cla = buf[OFFSET_CLA];
-		short lc = (short) (buf[OFFSET_LC] & 0x00FF);
 
 		if (selectingApplet()) {
 			return;
 		}
 		
-		readBuffer(apdu, tmp, (short)0, lc);
-
 		switch (state) {
 			case STATE_INIT:
-				issue(apdu, ins, lc);
+				issue(apdu, ins);
 				break;
 			case STATE_ISSUED:
 				switch (cla) {
 					case CLA_ISSUE:
-						issue(apdu, ins, lc);
+						issue(apdu, ins);
 						break;
 					case CLA_INIT:
-						init(apdu, ins, lc);
+						init(apdu, ins);
 						break;
 					case CLA_READ:
-						read(apdu, ins, lc);
+						read(apdu, ins);
 						break;
 					case CLA_RESET:
-						reset(apdu, ins, lc);
+						reset(apdu, ins);
 						break;
 					case CLA_START:
-						start(apdu, ins, lc);
+						start(apdu, ins);
 						break;
 					case CLA_STOP:
-						stop(apdu, ins, lc);
+						stop(apdu, ins);
 						break;
 					case CLA_KEYS:
-						keys(apdu, ins, lc);
+						keys(apdu, ins);
 						break;
 					default:
 						ISOException.throwIt(SW_INS_NOT_SUPPORTED);
@@ -238,9 +235,11 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		}
 	}
 
-	private void issue(APDU apdu, byte ins, short lc) {
+	private void issue(APDU apdu, byte ins) {
 		
-		byte[] buf = apdu.getBuffer();
+		byte[] buf = apdu.getBuffer();		
+		short lc = (short) (buf[OFFSET_LC] & 0x00FF);
+		readBuffer(apdu, tmp, (short)0, lc);
 		
 		switch (ins) {
 			case SET_PUBLIC_KEY_SIGNATURE:
@@ -257,10 +256,24 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 			case SET_PUBLIC_KEY_MODULUS_SC:
 				// Store the modulus of the public key of the SC.
                 pubKeySC.setModulus(tmp, (short) 0, lc);
+                
+                // Response for debugging.
+                apdu.setOutgoing();				
+				pubKeySC.getModulus(buf, (short) 0);		
+				apdu.setOutgoingLength((short) 128);				
+				apdu.sendBytes((short) 0, (short) 128);
+				
 				break;
 			case SET_PUBLIC_KEY_EXPONENT_SC:
 				// Store the exponent of the public key of the SC.
                 pubKeySC.setExponent(tmp, (short) 0, lc);
+                
+                // Response for debugging.
+                apdu.setOutgoing();				
+				pubKeySC.getExponent(buf, (short) 0);		
+				apdu.setOutgoingLength((short) 128);				
+				apdu.sendBytes((short) 0, (short) 128);
+				
 				break;
 			case SET_SC_ID:
 				// Store the ID of the SC.
@@ -296,17 +309,35 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		}
 	}
 
-	private void init(APDU apdu, byte ins, short lc) {
+	private void init(APDU apdu, byte ins) {
 		
 		byte[] buf = apdu.getBuffer();
+		short lc = (short) (buf[OFFSET_LC] & 0x00FF);
+		readBuffer(apdu, tmp, (short)0, lc);
 		
 		switch (ins) {
 		case INIT_START:
-			Util.arrayCopy(buf, (short) 0, tmp, (short) 0, lc);
+			/**Util.arrayCopy(buf, (short) 0, tmp, (short) 0, lc);
 			apdu.setOutgoing();
 			cipher.init(privKeySC,Cipher.MODE_DECRYPT);
             cipher.doFinal(tmp,(short)0,(short)2,buf,(short)0);
             apdu.sendBytes((short)0,NONCESIZE);
+			break;**/
+			
+			/*Util.arrayCopy(buf, (short) 0, tmp, (short) 0, lc);
+			apdu.setOutgoing();
+			cipher.init(privKeySC,Cipher.MODE_DECRYPT);
+            cipher.doFinal(tmp,(short)0,(short)2,buf,(short)0);
+            apdu.sendBytes((short)0,NONCESIZE);*/
+            
+            
+            byte[] returnValue = new byte[2];
+            Util.arrayCopy(tmp, (short) 0, returnValue, (short) 0, lc);
+            apdu.setOutgoing();				
+			Util.arrayCopy(returnValue, (short) 0, buf, (short) 0, (short) 2);				
+			apdu.setOutgoingLength(lc);				
+			apdu.sendBytes((short) 0, (short) 2);
+			
 			break;
 
 		case INIT_AUTHENTICATED:
@@ -362,132 +393,151 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	}
 
 	
-	private void read(APDU apdu, byte ins, short lc) {
-		byte[] buf = apdu.getBuffer();		
+	private void read(APDU apdu, byte ins) {
+		
+		byte[] buf = apdu.getBuffer();
+		short lc = (short) (buf[OFFSET_LC] & 0x00FF);
+		readBuffer(apdu, tmp, (short)0, lc);
+		
 		switch (ins) {
-		case READ_MILEAGE_SIGNED_NONCE:
-			// decrypt nonce with private_key_sc and send it
-			cipher.init(privKeySC, Cipher.MODE_DECRYPT);
-			cipher.doFinal(buf, (short)0, NONCESIZE, tmp, (short)0);
-			apdu.setOutgoing();				
-			Util.arrayCopy(tmp, (short) 0, buf, (short) 0, NONCESIZE);
-			apdu.setOutgoingLength((short) NONCESIZE);				
-			apdu.sendBytes((short) 0, (short) NONCESIZE);
-			break;
-		case READ_MILEAGE_START_MILEAGE:
-			// send start mileage
-			apdu.setOutgoing();
-			Util.arrayCopy(start_mileage, (short) 0, buf, (short) 0, BLOCKSIZE);
-			apdu.setOutgoingLength((short) BLOCKSIZE);				
-			apdu.sendBytes((short) 0, (short) BLOCKSIZE);
-			break;
-		case READ_MILEAGE_FINAL_MILEAGE:
-			// send final mileage
-			apdu.setOutgoing();
-			Util.arrayCopy(final_mileage, (short) 0, buf, (short) 0, BLOCKSIZE);
-			apdu.setOutgoingLength((short) BLOCKSIZE);				
-			apdu.sendBytes((short) 0, (short) BLOCKSIZE);
-			break;
-		default:
-			ISOException.throwIt(SW_INS_NOT_SUPPORTED);
+			case READ_MILEAGE_SIGNED_NONCE:
+				// decrypt nonce with private_key_sc and send it
+				cipher.init(privKeySC, Cipher.MODE_DECRYPT);
+				cipher.doFinal(buf, (short)0, NONCESIZE, tmp, (short)0);
+				apdu.setOutgoing();				
+				Util.arrayCopy(tmp, (short) 0, buf, (short) 0, NONCESIZE);
+				apdu.setOutgoingLength((short) NONCESIZE);				
+				apdu.sendBytes((short) 0, (short) NONCESIZE);
+				break;
+			case READ_MILEAGE_START_MILEAGE:
+				// send start mileage
+				apdu.setOutgoing();
+				Util.arrayCopy(start_mileage, (short) 0, buf, (short) 0, BLOCKSIZE);
+				apdu.setOutgoingLength((short) BLOCKSIZE);				
+				apdu.sendBytes((short) 0, (short) BLOCKSIZE);
+				break;
+			case READ_MILEAGE_FINAL_MILEAGE:
+				// send final mileage
+				apdu.setOutgoing();
+				Util.arrayCopy(final_mileage, (short) 0, buf, (short) 0, BLOCKSIZE);
+				apdu.setOutgoingLength((short) BLOCKSIZE);				
+				apdu.sendBytes((short) 0, (short) BLOCKSIZE);
+				break;
+			default:
+				ISOException.throwIt(SW_INS_NOT_SUPPORTED);
 		}
 	}
 	//TODO: we vertrouwen nu op de garbage collector om de velden te resetten, misschien geen goed idee.
-	private void reset(APDU apdu, byte ins, short lc) {
+	private void reset(APDU apdu, byte ins) {
 		switch (ins) {
-		case RESET_CARD:
-			// started = false
-			// final_mileage = 0
-			// start_mileage = 0
-			// public_key_ct = 0
-			// car_data = 0
-			started = false;
-			has_been_started = false;
-			final_mileage = new byte[128];
-			start_mileage = new byte[128];
-			pubKeyCT.clearKey();
-			car_data = new byte[128];
-			break;
-		default:
-			ISOException.throwIt(SW_INS_NOT_SUPPORTED);
+			case RESET_CARD:
+				// started = false
+				// final_mileage = 0
+				// start_mileage = 0
+				// public_key_ct = 0
+				// car_data = 0
+				started = false;
+				has_been_started = false;
+				final_mileage = new byte[128];
+				start_mileage = new byte[128];
+				pubKeyCT.clearKey();
+				car_data = new byte[128];
+				break;
+			default:
+				ISOException.throwIt(SW_INS_NOT_SUPPORTED);
 		}
 	}
 
-	private void start(APDU apdu, byte ins, short lc) {
-		byte[] buf = apdu.getBuffer();		
+	private void start(APDU apdu, byte ins) {
+		
+		byte[] buf = apdu.getBuffer();	
+		short lc = (short) (buf[OFFSET_LC] & 0x00FF);
+		readBuffer(apdu, tmp, (short)0, lc);
+		
 		switch (ins) {
-		case SET_START_MILEAGE:
-			// started = true
-			started = true;
-			// if start_mileage == 0, start_mileage = received_start_mileage
-			if (!has_been_started){
-				Util.arrayCopy(buf, (short)0, start_mileage, (short)0, BLOCKSIZE);
-				has_been_started = true;
-			}
-			// send car data			
-			apdu.setOutgoing();				
-			Util.arrayCopy(car_data, (short) 0, buf, (short) 0, BLOCKSIZE);
-			apdu.setOutgoingLength((short) BLOCKSIZE);				
-			apdu.sendBytes((short) 0, (short) BLOCKSIZE);
-			
-			break;
-		default:
-			ISOException.throwIt(SW_INS_NOT_SUPPORTED);
+			case SET_START_MILEAGE:
+				// started = true
+				started = true;
+				// if start_mileage == 0, start_mileage = received_start_mileage
+				if (!has_been_started){
+					Util.arrayCopy(buf, (short)0, start_mileage, (short)0, BLOCKSIZE);
+					has_been_started = true;
+				}
+				// send car data			
+				apdu.setOutgoing();				
+				Util.arrayCopy(car_data, (short) 0, buf, (short) 0, BLOCKSIZE);
+				apdu.setOutgoingLength((short) BLOCKSIZE);				
+				apdu.sendBytes((short) 0, (short) BLOCKSIZE);
+				
+				break;
+			default:
+				ISOException.throwIt(SW_INS_NOT_SUPPORTED);
 		}
 	}
 	//TODO: nonce wordt niet gechecked atm, moet dus nog gebeuren
-	private void stop(APDU apdu, byte ins, short lc) {
+	private void stop(APDU apdu, byte ins) {
+		
 		byte[] buf = apdu.getBuffer();
+		short lc = (short) (buf[OFFSET_LC] & 0x00FF);
+		readBuffer(apdu, tmp, (short)0, lc);
+		
 		switch (ins) {
-		case STOP_CAR:
-			// increment nonce
-			incrementNonce();
-			// send nonce
-			apdu.setOutgoing();				
-			Util.arrayCopy(nonce, (short)0, buf, (short)0, NONCESIZE);
-			apdu.setOutgoingLength((short) NONCESIZE);				
-			apdu.sendBytes((short) 0, (short) NONCESIZE);
-			break;
-		case SET_FINAL_MILEAGE:
-			// decrypt(public_key_sc {nonce + final_mileage})
-			// if received_nonce == stored_nonce continue, else exception
-			// store final_mileage
-			started = false;
-			Util.arrayCopy(buf, (short)0, final_mileage, (short)0, BLOCKSIZE);
-			
-			break;
-		default:
-			ISOException.throwIt(SW_INS_NOT_SUPPORTED);
+			case STOP_CAR:
+				// increment nonce
+				incrementNonce();
+				// send nonce
+				apdu.setOutgoing();				
+				Util.arrayCopy(nonce, (short)0, buf, (short)0, NONCESIZE);
+				apdu.setOutgoingLength((short) NONCESIZE);				
+				apdu.sendBytes((short) 0, (short) NONCESIZE);
+				break;
+			case SET_FINAL_MILEAGE:
+				// decrypt(public_key_sc {nonce + final_mileage})
+				// if received_nonce == stored_nonce continue, else exception
+				// store final_mileage
+				started = false;
+				Util.arrayCopy(buf, (short)0, final_mileage, (short)0, BLOCKSIZE);
+				
+				break;
+			default:
+				ISOException.throwIt(SW_INS_NOT_SUPPORTED);
 		}
 	}
 	
-	private void keys(APDU apdu, byte ins, short lc){
+	private void keys(APDU apdu, byte ins){
 		
 		byte[] buf = apdu.getBuffer();
+		//short lc = (short) (buf[OFFSET_LC] & 0x00FF);
+		//readBuffer(apdu, tmp, (short)0, lc);
 		
 		switch (ins) {
-		case KEYS_START:
-			// send SC_ID + signature
-			apdu.setOutgoing();
-			buf[0] = (byte) ((cardId >> 8) & 0xff);
-			buf[1] = (byte) (cardId & 0xff);
-			Util.arrayCopy(signatureRT, (short) 0, buf, (short) 2, lc);			
-			apdu.sendBytes((short)0, (short) (SCIDSIZE + BLOCKSIZE));
-			break;
-		case GET_PUBLIC_KEY_MODULUS:
-			// send pubkey modulus
-			apdu.setOutgoing();
-			pubKeySC.getModulus(buf, (short) 0);
-			apdu.sendBytes((short)0,BLOCKSIZE);
-			break;
-		case GET_PUBLIC_KEY_EXPONENT:
-			// send pubkey exponent
-			apdu.setOutgoing();
-			pubKeySC.getExponent(buf, (short) 0);
-			apdu.sendBytes((short)0,BLOCKSIZE);
-			break;
-		default:
-			ISOException.throwIt(SW_INS_NOT_SUPPORTED);
+			case KEYS_START:
+				// Send SC_ID + signature
+				buf[0] = (byte) ((cardId >> 8) & 0xff);
+				buf[1] = (byte) (cardId & 0xff);
+				Util.arrayCopy(signatureRT, (short) 0, buf, (short) 2, BLOCKSIZE);				
+				apdu.setOutgoingAndSend((short) 0, (short) (SCIDSIZE + BLOCKSIZE));
+				break;
+			case GET_PUBLIC_KEY_MODULUS:
+				// Send pubkey_sc modulus
+				//pubKeySC.getModulus(buf, (short) 0);				
+				//apdu.setOutgoingAndSend((short) 0, BLOCKSIZE);
+				pubKeySC.getModulus(buf, OFFSET_CDATA);
+				apdu.setOutgoing();
+				apdu.setOutgoingLength(BLOCKSIZE);
+				apdu.sendBytesLong(buf, OFFSET_CDATA, BLOCKSIZE);
+				break;
+			case GET_PUBLIC_KEY_EXPONENT:
+				// Send pubkey_sc exponent
+				//pubKeySC.getExponent(buf, (short) 0);
+				//apdu.setOutgoingAndSend((short) 0, BLOCKSIZE);
+				pubKeySC.getExponent(buf, OFFSET_CDATA);
+				apdu.setOutgoing();
+				apdu.setOutgoingLength(BLOCKSIZE);
+				apdu.sendBytesLong(buf, OFFSET_CDATA, BLOCKSIZE);
+				break;
+			default:
+				ISOException.throwIt(SW_INS_NOT_SUPPORTED);
 		}
 	}
 	
