@@ -260,8 +260,8 @@ public class RentalCarApplet extends Applet implements ISO7816 {
                 // Response for debugging.
                 apdu.setOutgoing();				
 				pubKeySC.getModulus(buf, (short) 0);		
-				apdu.setOutgoingLength((short) 128);				
-				apdu.sendBytes((short) 0, (short) 128);
+				apdu.setOutgoingLength(lc);				
+				apdu.sendBytes((short) 0, lc);
 				
 				break;
 			case SET_PUBLIC_KEY_EXPONENT_SC:
@@ -271,8 +271,8 @@ public class RentalCarApplet extends Applet implements ISO7816 {
                 // Response for debugging.
                 apdu.setOutgoing();				
 				pubKeySC.getExponent(buf, (short) 0);		
-				apdu.setOutgoingLength((short) 128);				
-				apdu.sendBytes((short) 0, (short) 128);
+				apdu.setOutgoingLength(lc);				
+				apdu.sendBytes((short) 0, lc);
 				
 				break;
 			case SET_SC_ID:
@@ -519,22 +519,23 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 				apdu.setOutgoingAndSend((short) 0, (short) (SCIDSIZE + BLOCKSIZE));
 				break;
 			case GET_PUBLIC_KEY_MODULUS:
-				// Send pubkey_sc modulus
-				//pubKeySC.getModulus(buf, (short) 0);				
-				//apdu.setOutgoingAndSend((short) 0, BLOCKSIZE);
+				// Send pubkey_sc modulus.
+				pubKeySC.getModulus(buf, (short) 0);				
+				apdu.setOutgoingAndSend((short) 0, BLOCKSIZE);			
+				/*
 				pubKeySC.getModulus(buf, OFFSET_CDATA);
 				apdu.setOutgoing();
 				apdu.setOutgoingLength(BLOCKSIZE);
-				apdu.sendBytesLong(buf, OFFSET_CDATA, BLOCKSIZE);
+				apdu.sendBytesLong(buf, OFFSET_CDATA, BLOCKSIZE);*/
 				break;
 			case GET_PUBLIC_KEY_EXPONENT:
 				// Send pubkey_sc exponent
-				//pubKeySC.getExponent(buf, (short) 0);
-				//apdu.setOutgoingAndSend((short) 0, BLOCKSIZE);
-				pubKeySC.getExponent(buf, OFFSET_CDATA);
+				pubKeySC.getExponent(buf, (short) 0);
+				apdu.setOutgoingAndSend((short) 0, (short) 3);
+				/*pubKeySC.getExponent(buf, OFFSET_CDATA);
 				apdu.setOutgoing();
 				apdu.setOutgoingLength(BLOCKSIZE);
-				apdu.sendBytesLong(buf, OFFSET_CDATA, BLOCKSIZE);
+				apdu.sendBytesLong(buf, OFFSET_CDATA, BLOCKSIZE);*/
 				break;
 			default:
 				ISOException.throwIt(SW_INS_NOT_SUPPORTED);

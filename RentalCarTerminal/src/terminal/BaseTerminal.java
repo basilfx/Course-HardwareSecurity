@@ -164,12 +164,17 @@ public class BaseTerminal extends JPanel {
 		capdu = new CommandAPDU(CLA_KEYS, GET_PUBLIC_KEY_MODULUS, (byte) 0, (byte) 0, BLOCKSIZE);
 		rapdu = sendCommandAPDU(capdu);
 		byte[] modulus = rapdu.getData();
+		log("received pubkey_sc modulus: " + new String(modulus));
 
 		// TODO unsure of exponent length
-		capdu = new CommandAPDU(CLA_KEYS, GET_PUBLIC_KEY_EXPONENT, (byte) 0, (byte) 0, BLOCKSIZE);
+		capdu = new CommandAPDU(CLA_KEYS, GET_PUBLIC_KEY_EXPONENT, (byte) 0, (byte) 0, (short) 3);
 		rapdu = sendCommandAPDU(capdu);
 		byte[] exponent = rapdu.getData();
-		currentSmartcard.setPublicKey(rsaHandler.getPublicKeyFromModulusExponent(modulus, exponent));
+		
+		log("received pubkey_sc exponent: " + new String(exponent));
+		
+		// Because the SC sends unsigned byte arrays, we convert them to signed byte arrays for the BigInteger conversion.
+		currentSmartcard.setPublicKey(rsaHandler.getPublicKeyFromModulusExponent(unsignedToSigned(modulus), unsignedToSigned(exponent)));
 		
 		log("pubkey_sc has been read by getKeys(). Modulus: " + currentSmartcard.getPublicKey().getModulus().toString() + ", exponent: " + currentSmartcard.getPublicKey().getPublicExponent().toString());
 	}
@@ -337,6 +342,23 @@ public class BaseTerminal extends JPanel {
 		}
 
 		return data;
+	}
+	
+	/**
+	 * Converts an unsigned byte array to a signed byte array by pushing a zero byte to the beginning of the array.
+	 * 
+	 * @param input
+	 * @return
+	 */
+	protected byte[] unsignedToSigned(byte[] input) {
+		byte[] output = new byte[input.length + 1];
+		output[0] = (byte) 0;
+		
+		for (int i = 0; i < input.length; i++) {
+			output[i + 1] = input[i];
+		}
+		
+		return output;
 	}
 
 	public static short bytesToShort(byte first_byte, byte second_byte) {

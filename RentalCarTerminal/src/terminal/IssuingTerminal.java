@@ -1,10 +1,12 @@
 package terminal;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 
 import javax.smartcardio.CardChannel;
 import javax.smartcardio.CommandAPDU;
@@ -69,27 +71,34 @@ public class IssuingTerminal extends BaseTerminal {
 		
 		// Send the public key of the SC to the SC. IS -> SC : pubkey_sc
 		byte[] modulus = getBytes(currentSmartcard.getPublicKey().getModulus());
-		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_MODULUS_SC, (byte) 0, (byte) 0, modulus, BLOCKSIZE);
+		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_MODULUS_SC, (byte) 0, (byte) 0, modulus, modulus.length);
 		rapdu = sendCommandAPDU(capdu);
 		
 		byte[] modulusResponse = rapdu.getData();
-		if (modulus == modulusResponse) {
+		
+		if (Arrays.equals(modulus, modulusResponse)) {
+			log("received pubkey_sc modulus: " + new String(modulusResponse));
 			log("pubkey_sc modulus has been set to: " + currentSmartcard.getPublicKey().getModulus().toString());
 		}
 		else {
-			log("pubkey_sc modulus has NOT CORRECTLY BEEN SET!: " + new String(modulus) + " does not equal received " + new String(modulusResponse));
+			log("pubkey_sc modulus has NOT CORRECTLY BEEN SET!");
+			log("sent pubkey_sc modulus: " + new String(modulus));
+			log("received pubkey_sc modulus: " + new String(modulusResponse));
 		}
 		
 		byte[] exponent = getBytes(currentSmartcard.getPublicKey().getPublicExponent());
-		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_EXPONENT_SC, (byte) 0, (byte) 0, exponent, BLOCKSIZE);
+		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_EXPONENT_SC, (byte) 0, (byte) 0, exponent, exponent.length);
 		rapdu = sendCommandAPDU(capdu);
 		
 		byte[] exponentResponse = rapdu.getData();
-		if (exponent == exponentResponse) {
+		if (Arrays.equals(exponent, exponentResponse)) {
+			log("received pubkey_sc exponent: " + new String(exponentResponse));
 			log("pubkey_sc exponent has been set to: " + currentSmartcard.getPublicKey().getPublicExponent().toString());
 		}
 		else {
-			log("pubkey_sc exponent has NOT CORRECTLY BEEN SET!: " + new String(exponent) + " does not equal received " + new String(exponentResponse));
+			log("pubkey_sc exponent has NOT CORRECTLY BEEN SET!");
+			log("sent pubkey_sc exponent: " + new String(exponent));
+			log("received pubkey_sc exponent: " + new String(exponentResponse));
 		}
 		
 		
