@@ -141,11 +141,11 @@ public class ReceptionTerminal extends BaseTerminal {
 			getKeys();
 			
 			tempNonce++;
-			byte[] data = rsaHandler.encrypt(currentSmartcard.getPublicKey(), shortToBytes(tempNonce));
+			byte[] data = rsaHandler.encrypt(currentSmartcard.getPublicKey(), JCUtil.shortToBytes(tempNonce));
 			CommandAPDU capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_SIGNED_NONCE, (byte) 0, (byte) 0, data, NONCESIZE);
 			ResponseAPDU rapdu = sendCommandAPDU(capdu);
 			data = rapdu.getData();
-			short received_nonce = bytesToShort(data[0], data[1]);
+			short received_nonce = JCUtil.bytesToShort(data[0], data[1]);
 			if (tempNonce == received_nonce){
 				//continue
 			} else {
@@ -170,14 +170,14 @@ public class ReceptionTerminal extends BaseTerminal {
 	
 	//TODO: unsure if correct
 	public void verifyMileage(byte[] data) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
-		byte[] nonce = subArray(data, 0, NONCESIZE);
-		byte[] mileage = subArray(data, NONCESIZE, MILEAGESIZE);
-		byte[] encrypted_signed_mileage = subArray(data, NONCESIZE + MILEAGESIZE, BLOCKSIZE);
+		byte[] nonce = JCUtil.subArray(data, 0, NONCESIZE);
+		byte[] mileage = JCUtil.subArray(data, NONCESIZE, MILEAGESIZE);
+		byte[] encrypted_signed_mileage = JCUtil.subArray(data, NONCESIZE + MILEAGESIZE, BLOCKSIZE);
 		byte[] signed_mileage = rsaHandler.decrypt(private_key_rt, encrypted_signed_mileage);
 		byte[] unsigned_mileage = rsaHandler.decrypt(public_key_ct, signed_mileage);
-		byte[] nonce_mileage = subArray(unsigned_mileage, 0, NONCESIZE + MILEAGESIZE);
+		byte[] nonce_mileage = JCUtil.subArray(unsigned_mileage, 0, NONCESIZE + MILEAGESIZE);
 		
-		if (compareArrays(mergeByteArrays(nonce, mileage), nonce_mileage)){
+		if (JCUtil.compareArrays(JCUtil.mergeByteArrays(nonce, mileage), nonce_mileage)){
 			//store values
 		} else {
 			//exception
@@ -202,8 +202,8 @@ public class ReceptionTerminal extends BaseTerminal {
 		date[0] = 15;
 		date[1] = 11;
 		date[2] = 13;		
-		byte[] data = mergeByteArrays(shortToBytes(tempNonce), shortToBytes(car_id));
-		byte[] car_data = mergeByteArrays(data, date);
+		byte[] data = JCUtil.mergeByteArrays(JCUtil.shortToBytes(tempNonce), JCUtil.shortToBytes(car_id));
+		byte[] car_data = JCUtil.mergeByteArrays(data, date);
 		return rsaHandler.encrypt(private_key_rt, car_data);
 	}
 	

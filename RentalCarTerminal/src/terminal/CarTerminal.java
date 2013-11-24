@@ -87,7 +87,7 @@ public class CarTerminal extends BaseTerminal{
 			CommandAPDU capdu = new CommandAPDU(CLA_STOP, STOP_CAR, (byte) 0, (byte) 0, NONCESIZE);
 			ResponseAPDU rapdu = sendCommandAPDU(capdu);
 			byte[] data = rapdu.getData();
-			Short nonce = bytesToShort(data[0], data[1]);
+			Short nonce = JCUtil.bytesToShort(data[0], data[1]);
 			
 			capdu = new CommandAPDU(CLA_STOP, SET_FINAL_MILEAGE, (byte) 0, (byte) 0, getEncryptedMileage(nonce), BLOCKSIZE);
 			rapdu = sendCommandAPDU(capdu);
@@ -98,21 +98,21 @@ public class CarTerminal extends BaseTerminal{
 
 	//TODO: check if this implementation is actually safe....
 	byte[] getEncryptedMileage(short nonce) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
-		byte[] bytes_nonce = shortToBytes(nonce);
-		byte[] bytes_mileage = intToBytes(mileage);
-		byte[] encrypted_mileage = rsaHandler.encrypt(public_key_rt, mergeByteArrays(bytes_nonce, bytes_mileage));
+		byte[] bytes_nonce = JCUtil.shortToBytes(nonce);
+		byte[] bytes_mileage = JCUtil.intToBytes(mileage);
+		byte[] encrypted_mileage = rsaHandler.encrypt(public_key_rt, JCUtil.mergeByteArrays(bytes_nonce, bytes_mileage));
 		return encrypted_mileage;
 	}
 	
 	//TODO check if data is actually correct
 	short checkCarData(byte[] data) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{	
 		byte[] decrypted_data = rsaHandler.decrypt(public_key_rt, data);
-		short nonce = bytesToShort(data[0], data[1]);		
-		short decrypted_car_id = bytesToShort(decrypted_data[2], decrypted_data[3]);
-		short day = bytesToShort(decrypted_data[4], decrypted_data[5]);
-		short month = bytesToShort(decrypted_data[6], decrypted_data[7]);
-		short year = bytesToShort(decrypted_data[8], decrypted_data[9]);
-		short sc_id = bytesToShort(decrypted_data[10], decrypted_data[11]);
+		short nonce = JCUtil.bytesToShort(data[0], data[1]);		
+		short decrypted_car_id = JCUtil.bytesToShort(decrypted_data[2], decrypted_data[3]);
+		short day = JCUtil.bytesToShort(decrypted_data[4], decrypted_data[5]);
+		short month = JCUtil.bytesToShort(decrypted_data[6], decrypted_data[7]);
+		short year = JCUtil.bytesToShort(decrypted_data[8], decrypted_data[9]);
+		short sc_id = JCUtil.bytesToShort(decrypted_data[10], decrypted_data[11]);
 		return nonce;
 	}
 	

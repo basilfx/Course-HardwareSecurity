@@ -4,10 +4,7 @@ package junit;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.InvalidKeySpecException;
 
 import javax.smartcardio.CardException;
 
@@ -19,6 +16,7 @@ import org.junit.Test;
 import terminal.BaseTerminal;
 import terminal.CarTerminal;
 import terminal.IssuingTerminal;
+import terminal.JCUtil;
 import terminal.ReceptionTerminal;
 import terminal.Smartcard;
 import encryption.RSAHandler;
@@ -48,8 +46,13 @@ public class TerminalTest {
 	@After
 	public void tearDown() throws Exception {
 		receptionTerminal.reset();
-		issueingTerminal = null;
+		receptionTerminal.stopRunning();
 		receptionTerminal = null;
+
+		issueingTerminal.stopRunning();
+		issueingTerminal = null;
+
+		carTerminal.stopRunning();
 		carTerminal = null;		
 	}
 	
@@ -60,21 +63,22 @@ public class TerminalTest {
 	
 	@Test
 	public void testKeys() throws Exception{
-		receptionTerminal.init();
+		receptionTerminal.initCard();
 		assertEquals("Check if smart card id matches", smartCardId, receptionTerminal.currentSmartcard.getScId());
 		Smartcard first = issueingTerminal.currentSmartcard;
 		Smartcard second = receptionTerminal.currentSmartcard;
-		assertTrue("Check if pubkey matches", BaseTerminal.compareArrays(first.getPublicKey().getEncoded(), second.getPublicKey().getEncoded()));
+		assertTrue("Check if pubkey matches", JCUtil.compareArrays(first.getPublicKey().getEncoded(), second.getPublicKey().getEncoded()));
 		
 		RSAPublicKey public_key_rt = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_rt");
-		byte[] data = BaseTerminal.mergeByteArrays(BaseTerminal.shortToBytes(smartCardId), first.getPublicKey().getEncoded());
+		byte[] data = JCUtil.mergeByteArrays(JCUtil.shortToBytes(smartCardId), first.getPublicKey().getEncoded());
 		boolean result = rsaHandler.verify(public_key_rt, data, second.getSignature());
 		assertTrue("validate signature", result);
 	}
 	
 	@Test
 	public void testSetMileage() throws Exception{
-		receptionTerminal.init();
+		receptionTerminal.initCard();
+		receptionTerminal.stopRunning();
 		int start_mileage = 500;
 		int final_mileage = 1000;
 		carTerminal.setMileage(start_mileage);
@@ -82,6 +86,7 @@ public class TerminalTest {
 		
 		carTerminal.setMileage(final_mileage);
 		carTerminal.stopCar();
+		carTerminal.stopRunning();
 		
 		receptionTerminal.read();
 		assertEquals("Start mileage", start_mileage, receptionTerminal.start_mileage);
@@ -91,15 +96,15 @@ public class TerminalTest {
 	
 	@Test(expected = CardException.class)
 	public void testReset() throws Exception{
-		receptionTerminal.init();
+		receptionTerminal.initCard();
 		receptionTerminal.reset();
-		receptionTerminal.init();
+		receptionTerminal.initCard();
 		receptionTerminal.getKeys();
 	}
 	
 	@Test(expected = CardException.class)
 	public void testResetKeys() throws Exception{
-		receptionTerminal.init();
+		receptionTerminal.initCard();
 		receptionTerminal.reset();
 		receptionTerminal.getKeys();
 	}
@@ -107,8 +112,8 @@ public class TerminalTest {
 	
 	@Test(expected = CardException.class)
 	public void testDoubleInit() throws Exception{
-		receptionTerminal.init();
-		receptionTerminal.init();
+		receptionTerminal.initCard();
+		receptionTerminal.initCard();
 	}
 
 }
