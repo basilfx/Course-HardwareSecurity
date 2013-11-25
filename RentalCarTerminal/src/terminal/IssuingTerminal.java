@@ -78,6 +78,7 @@ public class IssuingTerminal extends BaseTerminal {
 		capdu = new CommandAPDU(CLA_ISSUE, SET_RANDOM_DATA_SEED, (byte) 0, (byte) 0, random_seed, 6);
 		sendCommandAPDU(capdu);
 		
+		
 		// Send the public key of the SC to the SC. IS -> SC : pubkey_sc
 		byte[] modulus = JCUtil.getBytes(currentSmartcard.getPublicKey().getModulus());
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_MODULUS_SC, (byte) 0, (byte) 0, modulus, modulus.length);
@@ -110,7 +111,10 @@ public class IssuingTerminal extends BaseTerminal {
 			log("received pubkey_sc exponent: " + new String(exponentResponse));
 		}
 		
-		
+		// TODO:
+		// Ruud: klopt het dat hier alleen de signature wordt verzonden en niet de inhoud ervan?
+		// Ruud: daarna checken we of de ontvangen signature correct is mbv de public_key van de RT, maar de SC kan nooit die signature maken omdat hij de priv_key van de RT
+		//			niet heeft, toch? Of stuurt ie gewoon dezelfde signature nog een keer terug voor verificatie? Ik vind onderstaand een beetje vreemd.
 		// Send signature. IS -> SC : {|sc_id, pubkey_sc|}privkey_rt
 		byte[] mergedData = JCUtil.mergeByteArrays(JCUtil.shortToBytes(smartCardId), currentSmartcard.getPublicKey().getEncoded());
 		byte[] signature = rsaHandler.sign(private_key_rt, mergedData);
@@ -125,7 +129,7 @@ public class IssuingTerminal extends BaseTerminal {
 		boolean verified = rsaHandler.verify(public_key_rt, mergedData, responseSignature);
 		log("Has the signature correctly been set? : " + Boolean.toString(verified));
 		
-		// Send the private key of the SC to the SC. IS -> SC : IS -> SC : privkey_sc
+		// Send the private key of the SC to the SC. IS -> SC : privkey_sc
 		modulus = JCUtil.getBytes(private_key_sc.getModulus());
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PRVATE_KEY_MODULUS_SC, (byte) 0, (byte) 0, modulus);
 		sendCommandAPDU(capdu);

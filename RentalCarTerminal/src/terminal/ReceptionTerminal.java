@@ -75,6 +75,8 @@ public class ReceptionTerminal extends BaseTerminal {
 	
 	public void initCard() throws CardException {
 		try {
+			// RT -> SC: init
+			// SC -> RT: {|sc_id,pubkey_sc|}privkey_rt
 			getKeys();
 			
 			// Because pubkey_sc is known to the public (the APDU's in the getKeys() method can be forged by everyone), we should
@@ -82,6 +84,11 @@ public class ReceptionTerminal extends BaseTerminal {
 			// N1 should therefore be a large random number or text.
 			randomizeNonce();
 				
+				
+			// TODO: Ruud: die nonce (N1) hier is niet encrypted met de pubkey van de SC, dat moet wel volgens onze	specs
+			// RT -> SC: {|N1|}pubkey_sc
+			// SC -> RT: N1
+			// [RT: if N1 = N1 then SC is authenticated]
 			CommandAPDU capdu = new CommandAPDU(CLA_INIT, INIT_START, (byte) 0, (byte) 0, nonce, NONCESIZE);
 			ResponseAPDU rapdu = sendCommandAPDU(capdu);
 			byte[] data = rapdu.getData();
@@ -91,8 +98,13 @@ public class ReceptionTerminal extends BaseTerminal {
 			} else {
 				//Oh noes!, throw exception or something
 				log("ERROR! The nonces do not match! The SC has not been authenticated to the RT.");
+				// TODO: Ruud: moeten we hier niet exiten?
+				//exit();
 			}
+						
 			
+			// SC -> RT {|N2|}pubkey_rt
+			// RT -> N2
 			capdu = new CommandAPDU(CLA_INIT, INIT_AUTHENTICATED, (byte) 0, (byte) 0, BLOCKSIZE);
 			rapdu = sendCommandAPDU(capdu);
 			byte[] encrypted_nonce = rapdu.getData();
@@ -100,7 +112,10 @@ public class ReceptionTerminal extends BaseTerminal {
 			
 			capdu = new CommandAPDU(CLA_INIT, INIT_SECOND_NONCE, (byte) 0, (byte) 0, decrypted_nonce);
 			sendCommandAPDU(capdu);
+						
 			
+			// TODO: Ruud: Moeten deze niet gesigned worden?
+			// RT -> SC: {|pubkey_ct|}privkey_rt
 			//byte[] car_public_key_modulus = rsaHandler.encrypt(private_key_rt, public_key_ct.getModulus().toByteArray());
 			byte[] car_public_key_modulus = JCUtil.getBytes(public_key_ct.getModulus());
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_CAR_KEY_MODULUS, (byte) 0, (byte) 0, car_public_key_modulus);
@@ -118,6 +133,7 @@ public class ReceptionTerminal extends BaseTerminal {
 			data = rapdu.getData();*/
 			
 			
+			// RT->SC: {|car_id, date, sc_id, N0|}pubkey_ct
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_SIGNED_ENCRYPTED_CAR_DATA, (byte) 0, (byte) 0, getEncryptedCarData());
 			rapdu = sendCommandAPDU(capdu);
 			data = rapdu.getData();
@@ -126,7 +142,8 @@ public class ReceptionTerminal extends BaseTerminal {
 			throw new CardException(e.getMessage());
 		}
 	}
-	//TODO: real implementation
+	
+	// TODO: real implementation
 	public void read() throws CardException {
 		try {
 			getKeys();
@@ -139,9 +156,13 @@ public class ReceptionTerminal extends BaseTerminal {
 			data = rapdu.getData();
 
 			if (Arrays.equals(nonce, data)){
-				//continue
+				// were fine!
+				log("The nonces match! The SC is now authenticated to the RT.");
 			} else {
-				//exception
+				//Oh noes!, throw exception or something
+				log("ERROR! The nonces do not match! The SC has not been authenticated to the RT.");
+				// TODO: Ruud: moeten we hier niet exiten?
+				//exit();
 			}
 			
 			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_START_MILEAGE, (byte) 0, (byte) 0, NONCESIZE + MILEAGESIZE + BLOCKSIZE);
@@ -166,9 +187,12 @@ public class ReceptionTerminal extends BaseTerminal {
 		byte[] mileage = JCUtil.subArray(data, NONCESIZE, MILEAGESIZE);
 		byte[] encrypted_signed_mileage = JCUtil.subArray(data, NONCESIZE + MILEAGESIZE, BLOCKSIZE);
 		byte[] signed_mileage = rsaHandler.decrypt(private_key_rt, encrypted_signed_mileage);
+		// TODO: Ruud: moet hier niet gewoon de signature van worden geverified en afgestript
 		byte[] unsigned_mileage = rsaHandler.decrypt(public_key_ct, signed_mileage);
 		byte[] nonce_mileage = JCUtil.subArray(unsigned_mileage, 0, NONCESIZE + MILEAGESIZE);
 		
+		// TODO: Ruud: Wat doet dit precies? De arrays gaan nooit hetzelfde zijn omdat je de gedecrypte en geunsignde versie vergelijkt met de geencrypte en gesignde versie
+		// TODO: Ruud: we kunnen de 'mileage' of '-1' returnen?
 		if (JCUtil.compareArrays(JCUtil.mergeByteArrays(nonce, mileage), nonce_mileage)){
 			//store values
 		} else {
@@ -186,8 +210,12 @@ public class ReceptionTerminal extends BaseTerminal {
 			throw new CardException(e.getMessage());
 		}
 	}
-	//TODO fix hardcoded values
+	
+	// TODO fix hardcoded values
+	// TODO: Ruud: is dat echt een ramp?
 	byte[] getEncryptedCarData() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
+		// TODO: Ruud: moet hier niet ook de sc_id in?	
+		// TODO: Ruud: moet dit niet ook signed zijn?
 		randomizeNonce();
 		short car_id = 12;
 		byte[] date = new byte[3];		

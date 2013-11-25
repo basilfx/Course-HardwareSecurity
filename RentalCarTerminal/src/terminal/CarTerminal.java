@@ -63,7 +63,6 @@ public class CarTerminal extends BaseTerminal{
 	}
 
 
-
 	public void startCar() throws CardException {
 		try {
 			getKeys();
