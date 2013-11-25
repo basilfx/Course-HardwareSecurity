@@ -1,13 +1,16 @@
 package junit;
 
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import java.util.Arrays;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import terminal.BaseTerminal;
 import terminal.JCUtil;
 
 public class JCUtilTest {
@@ -55,7 +58,7 @@ public class JCUtilTest {
 	
 	@Test
 	public void testIntToBytesCorrect(){
-		assertTrue("Int to Bytes test correct", JCUtil.compareArrays(int_test_bytes, JCUtil.intToBytes(int_test)));
+		assertTrue("Int to Bytes test correct", Arrays.equals(int_test_bytes, JCUtil.intToBytes(int_test)));
 	}
 	
 	@Test
@@ -68,14 +71,14 @@ public class JCUtilTest {
 		String string = "random";
 		byte[] test1 = JCUtil.mergeByteArrays(testData, string.getBytes());
 		byte[] test2 = (testString + string).getBytes();
-		assertTrue("Test merge arrays correct", JCUtil.compareArrays(test1, test2));
+		assertTrue("Test merge arrays correct", Arrays.equals(test1, test2));
 	}
 	
 	@Test
 	public void testMergeIncorrect(){
 		String string = "random";
 		byte[] test1 = JCUtil.mergeByteArrays(testData, string.getBytes());
-		assertFalse("Test merge arrays correct", JCUtil.compareArrays(test1, testString.getBytes()));
+		assertFalse("Test merge arrays correct", Arrays.equals(test1, testString.getBytes()));
 	}	
 	
 }

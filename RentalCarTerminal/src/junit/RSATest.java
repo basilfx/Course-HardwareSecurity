@@ -9,6 +9,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Arrays;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -18,7 +19,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import terminal.JCUtil;
 import encryption.RSAHandler;
 
 public class RSATest {
@@ -67,13 +67,13 @@ public class RSATest {
 	public void testCorrectPublicEncryption() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
 		byte[] data = rsaHandler.encrypt(public_key_rt, testData);
 		byte[] decrypted_data = rsaHandler.decrypt(private_key_rt, data);
-		assertTrue("test correct public key Encryption", JCUtil.compareArrays(testData, decrypted_data));
+		assertTrue("test correct public key Encryption", Arrays.equals(testData, decrypted_data));
 	}
 	@Test
 	public void testCorrectPrivateEncryption() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
 		byte[] data = rsaHandler.encrypt(private_key_rt, testData);
 		byte[] decrypted_data = rsaHandler.decrypt(public_key_rt, data);
-		assertTrue("test correct private key Encryption", JCUtil.compareArrays(testData, decrypted_data));
+		assertTrue("test correct private key Encryption", Arrays.equals(testData, decrypted_data));
 	}
 	
 	@Test(expected = BadPaddingException.class)

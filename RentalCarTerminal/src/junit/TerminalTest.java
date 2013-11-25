@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.security.interfaces.RSAPublicKey;
+import java.util.Arrays;
 
 import javax.smartcardio.CardException;
 
@@ -13,7 +14,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import terminal.BaseTerminal;
 import terminal.CarTerminal;
 import terminal.IssuingTerminal;
 import terminal.JCUtil;
@@ -67,7 +67,7 @@ public class TerminalTest {
 		assertEquals("Check if smart card id matches", smartCardId, receptionTerminal.currentSmartcard.getScId());
 		Smartcard first = issueingTerminal.currentSmartcard;
 		Smartcard second = receptionTerminal.currentSmartcard;
-		assertTrue("Check if pubkey matches", JCUtil.compareArrays(first.getPublicKey().getEncoded(), second.getPublicKey().getEncoded()));
+		assertTrue("Check if pubkey matches", Arrays.equals(first.getPublicKey().getEncoded(), second.getPublicKey().getEncoded()));
 		
 		RSAPublicKey public_key_rt = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_rt");
 		byte[] data = JCUtil.mergeByteArrays(JCUtil.shortToBytes(smartCardId), first.getPublicKey().getEncoded());
