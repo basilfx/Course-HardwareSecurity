@@ -13,6 +13,7 @@ import javacard.framework.Util;
 import javacard.security.KeyBuilder;
 import javacard.security.RSAPrivateKey;
 import javacard.security.RSAPublicKey;
+import javacard.security.RandomData;
 import javacard.security.Signature;
 import javacardx.crypto.Cipher;
 
@@ -39,7 +40,7 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	private static final byte SET_PRIVATE_KEY_EXPONENT_SC = (byte) 0x06;
 	private static final byte SET_PUBLIC_KEY_MODULUS_RT = (byte) 0x07;
 	private static final byte SET_PUBLIC_KEY_EXPONENT_RT = (byte) 0x08;
-	private static final byte SET_START_NONCE = (byte) 0x09;
+	private static final byte SET_RANDOM_DATA_SEED = (byte) 0x09;
 
 	/** Init Bytes */
 	private static final byte CLA_INIT = (byte) 0xB2;
@@ -125,6 +126,9 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	// Boolean which indicates whether the car has been started atleast once
 	private boolean has_been_started;
 	
+	// The RandomData instance.
+	private RandomData random;
+	
 
 	public static void install(byte[] bArray, short bOffset, byte bLength) throws SystemException {
 		new RentalCarApplet();
@@ -151,8 +155,11 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		// Initialize state.
 		state = STATE_INIT;
 		
-		// create nonce
+		// Create nonce
 		nonce = new byte[NONCESIZE];
+		
+		// Create instance of RandomData.
+		random = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
 		
 		started = false;
 		has_been_started = false;
@@ -285,8 +292,9 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 				apdu.setOutgoingAndSend((short) 0, (short) 2);
 				
 				break;
-			case SET_START_NONCE:
-				Util.arrayCopy(tmp, (short) 0, nonce, (short) 0, NONCESIZE);
+			case SET_RANDOM_DATA_SEED:
+				random.setSeed(buf, (short) 0, (short) 6);
+				break;
 			case SET_PRVATE_KEY_MODULUS_SC:
 				// Store the modulus of the private key of the SC.
                 privKeySC.setModulus(tmp, (short) 0, lc);
@@ -312,65 +320,63 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	private void init(APDU apdu, byte ins) {
 		
 		byte[] buf = apdu.getBuffer();
-		short lc = (short) (buf[OFFSET_LC] & 0x00FF);
-		readBuffer(apdu, tmp, (short)0, lc);
-		
-		switch (ins) {
-		case INIT_START:
-			/**Util.arrayCopy(buf, (short) 0, tmp, (short) 0, lc);
-			apdu.setOutgoing();
-			cipher.init(privKeySC,Cipher.MODE_DECRYPT);
-            cipher.doFinal(tmp,(short)0,(short)2,buf,(short)0);
-            apdu.sendBytes((short)0,NONCESIZE);
-			break;**/
 			
-			/*Util.arrayCopy(buf, (short) 0, tmp, (short) 0, lc);
-			apdu.setOutgoing();
-			cipher.init(privKeySC,Cipher.MODE_DECRYPT);
-            cipher.doFinal(tmp,(short)0,(short)2,buf,(short)0);
-            apdu.sendBytes((short)0,NONCESIZE);*/
-            
-            
-            byte[] returnValue = new byte[2];
+		switch (ins) {
+		case INIT_START:  
+			
+			short lc = (short) (buf[OFFSET_LC] & 0x00FF);
+			readBuffer(apdu, tmp, (short)0, lc);
+			
+            byte[] returnValue = new byte[NONCESIZE];
             Util.arrayCopy(tmp, (short) 0, returnValue, (short) 0, lc);
             apdu.setOutgoing();				
-			Util.arrayCopy(returnValue, (short) 0, buf, (short) 0, (short) 2);				
+			Util.arrayCopy(returnValue, (short) 0, buf, (short) 0, NONCESIZE);				
 			apdu.setOutgoingLength(lc);				
-			apdu.sendBytes((short) 0, (short) 2);
-			
+			apdu.sendBytes((short) 0, NONCESIZE);			
 			break;
-
 		case INIT_AUTHENTICATED:
-			incrementNonce();
-			apdu.setOutgoing();
-			Util.arrayCopy(nonce, (byte)0, tmp, (byte)0, NONCESIZE);
+			
+			// TODO: check whether the terminal is authenticated where it is required.
+			
+			randomizeNonce();
 			cipher.init(pubKeyRT,Cipher.MODE_ENCRYPT);
-			cipher.doFinal(tmp,(short)0,NONCESIZE,buf,(short)0);
-			apdu.sendBytes((short)0,NONCESIZE);
+			cipher.doFinal(nonce,(short)0,NONCESIZE,buf,(short)0);
+			
+			apdu.setOutgoingAndSend((short)0,BLOCKSIZE);
 			break;
 		case INIT_SECOND_NONCE:
-			byte[] received_nonce = new byte[NONCESIZE];
-			Util.arrayCopy(buf, (short)0, received_nonce, (short)0, NONCESIZE);
+			lc = (short) (buf[OFFSET_LC] & 0x00FF);
+			readBuffer(apdu, tmp, (short)0, lc);
+			
 			for (byte i = 0; i < NONCESIZE; i++){
-				if (received_nonce[i] != nonce[i]){
+				if (tmp[i] != nonce[i]){
 					ISOException.throwIt(NONCE_FAILURE);
 				}
 			}
 			break;
 		case INIT_SET_CAR_KEY_MODULUS:
-			//Store the length of the modulus as the first 2 bytes in the tmp array
-			Util.setShort(tmp,(short) 0 , lc);
-			//Store the modulus in tmp at position 4
-			Util.arrayCopy(buf, (short) 0, tmp, (short) 4, lc);
+			
+			lc = (short) (buf[OFFSET_LC] & 0x00FF);
+			readBuffer(apdu, tmp, (short)0, lc);
+			
+			// Store the modulus of the public key of the CT.
+            pubKeyCT.setModulus(tmp, (short) 0, lc);
+            
 			break;
 		case INIT_SET_CAR_KEY_EXPONENT:
-			//Get the length of the modulus as the first 2 bytes in the tmp array
-			short length = Util.getShort(tmp, (short)0);
-			//Set the length of the exponent as the first 2 bytes after the modulus
-			Util.setShort(tmp,(short) 2, lc);
-			//Store the exponent in tmp
-			Util.arrayCopy(buf, (short) 0, tmp, (short)(4 + length), lc);			
-		case INIT_CHECK_CAR_KEY_SIGNATURE:
+			
+			lc = (short) (buf[OFFSET_LC] & 0x00FF);
+			readBuffer(apdu, tmp, (short)0, lc);
+			
+			// Store the exponent of the public key of the CT.
+            pubKeyCT.setExponent(tmp, (short) 0, lc);
+            
+            break;
+		/*case INIT_CHECK_CAR_KEY_SIGNATURE:
+			
+			lc = (short) (buf[OFFSET_LC] & 0x00FF);
+			readBuffer(apdu, tmp, (short)0, lc);
+			
 			short modulus_length = Util.getShort(tmp, (short)0);
 			short exponent_length = Util.getShort(tmp, (short)2);
 			//Check signature
@@ -382,6 +388,8 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 			} else {
 				ISOException.throwIt(SIGNATURE_FAILURE);
 			}
+			break;
+			*/
 			
 		case INIT_SET_SIGNED_ENCRYPTED_CAR_DATA:
 			// decrypt the car data and store it
@@ -483,8 +491,8 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		
 		switch (ins) {
 			case STOP_CAR:
-				// increment nonce
-				incrementNonce();
+				// randomize nonce
+				randomizeNonce();
 				// send nonce
 				apdu.setOutgoing();				
 				Util.arrayCopy(nonce, (short)0, buf, (short)0, NONCESIZE);
@@ -531,15 +539,10 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		}
 	}
 	
-	private void incrementNonce(){
-		nonce[0]++;
-		for (byte i = 0; i < NONCESIZE - 1; i++){
-			if (nonce[i] == (byte)0){
-				nonce[i + 1]++;
-			}
-		}
-		if (nonce[NONCESIZE] == (byte)0){
-			nonce[0]++;
-		}
+	/**
+	 * Assigns a random value to the nonce property of this class.
+	 */
+	protected void randomizeNonce() {
+		random.generateData(nonce, (short) 0, NONCESIZE);
 	}
 }

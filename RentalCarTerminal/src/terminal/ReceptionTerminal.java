@@ -6,6 +6,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -76,22 +77,15 @@ public class ReceptionTerminal extends BaseTerminal {
 		try {
 			getKeys();
 			
-			
-			//
-			// TODO!!
-			//
 			// Because pubkey_sc is known to the public (the APDU's in the getKeys() method can be forged by everyone), we should
 			// make it infeasible for an attacker to pre-compute {|N1|}pubkey_sc for every (or a substantial part of) the possible N1's.
 			// N1 should therefore be a large random number or text.
-			/*tempNonce++;
-			
-			short test = (short) 1000;
+			randomizeNonce();
 				
-			CommandAPDU capdu = new CommandAPDU(CLA_INIT, INIT_START, (byte) 0, (byte) 0, shortToBytes(test), 2);
+			CommandAPDU capdu = new CommandAPDU(CLA_INIT, INIT_START, (byte) 0, (byte) 0, nonce, NONCESIZE);
 			ResponseAPDU rapdu = sendCommandAPDU(capdu);
 			byte[] data = rapdu.getData();
-			short received_nonce = bytesToShort(data[0], data[1]);
-			if (tempNonce == received_nonce){//TODO
+			if (Arrays.equals(nonce, data)) {
 				// were fine!
 				log("The nonces match! The SC is now authenticated to the RT.");
 			} else {
@@ -99,38 +93,35 @@ public class ReceptionTerminal extends BaseTerminal {
 				log("ERROR! The nonces do not match! The SC has not been authenticated to the RT.");
 			}
 			
-			/*
 			capdu = new CommandAPDU(CLA_INIT, INIT_AUTHENTICATED, (byte) 0, (byte) 0, BLOCKSIZE);
 			rapdu = sendCommandAPDU(capdu);
 			byte[] encrypted_nonce = rapdu.getData();
 			byte[] decrypted_nonce = rsaHandler.decrypt(private_key_rt, encrypted_nonce);
 			
-			
 			capdu = new CommandAPDU(CLA_INIT, INIT_SECOND_NONCE, (byte) 0, (byte) 0, decrypted_nonce);
-			rapdu = sendCommandAPDU(capdu);
-			data = rapdu.getData();
+			sendCommandAPDU(capdu);
 			
-			byte[] car_public_key_modulus = rsaHandler.encrypt(private_key_rt, public_key_ct.getModulus().toByteArray());
+			//byte[] car_public_key_modulus = rsaHandler.encrypt(private_key_rt, public_key_ct.getModulus().toByteArray());
+			byte[] car_public_key_modulus = JCUtil.getBytes(public_key_ct.getModulus());
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_CAR_KEY_MODULUS, (byte) 0, (byte) 0, car_public_key_modulus);
-			rapdu = sendCommandAPDU(capdu);
-			data = rapdu.getData();
+			sendCommandAPDU(capdu);
 			
-			byte[] car_public_key_exponent = rsaHandler.encrypt(private_key_rt, public_key_ct.getPublicExponent().toByteArray());
+			//byte[] car_public_key_exponent = rsaHandler.encrypt(private_key_rt, public_key_ct.getPublicExponent().toByteArray());
+			byte[] car_public_key_exponent = JCUtil.getBytes(public_key_ct.getPublicExponent());
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_CAR_KEY_EXPONENT, (byte) 0, (byte) 0, car_public_key_exponent);
-			rapdu = sendCommandAPDU(capdu);
-			data = rapdu.getData();
+			sendCommandAPDU(capdu);
 			
-			byte[] car_public_key = mergeByteArrays(car_public_key_modulus, car_public_key_exponent);
+			/*byte[] car_public_key = mergeByteArrays(car_public_key_modulus, car_public_key_exponent);
 			byte[] signature = rsaHandler.sign(private_key_rt, car_public_key);
 			capdu = new CommandAPDU(CLA_INIT, INIT_CHECK_CAR_KEY_SIGNATURE, (byte) 0, (byte) 0, signature);
 			rapdu = sendCommandAPDU(capdu);
-			data = rapdu.getData();
+			data = rapdu.getData();*/
 			
 			
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_SIGNED_ENCRYPTED_CAR_DATA, (byte) 0, (byte) 0, getEncryptedCarData());
 			rapdu = sendCommandAPDU(capdu);
 			data = rapdu.getData();
-			*/
+			
 		} catch (Exception e) {
 			throw new CardException(e.getMessage());
 		}
@@ -140,13 +131,14 @@ public class ReceptionTerminal extends BaseTerminal {
 		try {
 			getKeys();
 			
-			tempNonce++;
-			byte[] data = rsaHandler.encrypt(currentSmartcard.getPublicKey(), JCUtil.shortToBytes(tempNonce));
+			randomizeNonce();
+			
+			byte[] data = rsaHandler.encrypt(currentSmartcard.getPublicKey(), nonce);
 			CommandAPDU capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_SIGNED_NONCE, (byte) 0, (byte) 0, data, NONCESIZE);
 			ResponseAPDU rapdu = sendCommandAPDU(capdu);
 			data = rapdu.getData();
-			short received_nonce = JCUtil.bytesToShort(data[0], data[1]);
-			if (tempNonce == received_nonce){
+
+			if (Arrays.equals(nonce, data)){
 				//continue
 			} else {
 				//exception
@@ -196,13 +188,13 @@ public class ReceptionTerminal extends BaseTerminal {
 	}
 	//TODO fix hardcoded values
 	byte[] getEncryptedCarData() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
-		tempNonce++;	
+		randomizeNonce();
 		short car_id = 12;
 		byte[] date = new byte[3];		
 		date[0] = 15;
 		date[1] = 11;
 		date[2] = 13;		
-		byte[] data = JCUtil.mergeByteArrays(JCUtil.shortToBytes(tempNonce), JCUtil.shortToBytes(car_id));
+		byte[] data = JCUtil.mergeByteArrays(nonce, JCUtil.shortToBytes(car_id));
 		byte[] car_data = JCUtil.mergeByteArrays(data, date);
 		return rsaHandler.encrypt(private_key_rt, car_data);
 	}

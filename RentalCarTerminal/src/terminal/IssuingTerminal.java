@@ -3,6 +3,7 @@ package terminal;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
@@ -31,6 +32,7 @@ public class IssuingTerminal extends BaseTerminal {
 	private static final byte SET_PRIVATE_KEY_EXPONENT_SC = (byte) 0x06;
 	private static final byte SET_PUBLIC_KEY_MODULUS_RT = (byte) 0x07;
 	private static final byte SET_PUBLIC_KEY_EXPONENT_RT = (byte) 0x08;
+	private static final byte SET_RANDOM_DATA_SEED = (byte) 0x09;
 
 	// The card applet.
 	CardChannel applet;
@@ -68,6 +70,13 @@ public class IssuingTerminal extends BaseTerminal {
 		
 		byte[] data = rapdu.getData();
 		log("Card ID has been set to: " + Short.toString(JCUtil.bytesToShort(data[0], data[1])));
+		
+		// Send the random seed to the SC. IS -> SC : random_data_seed
+		SecureRandom random = new SecureRandom();
+		byte[] random_seed = new byte[6];
+		random.nextBytes(random_seed);
+		capdu = new CommandAPDU(CLA_ISSUE, SET_RANDOM_DATA_SEED, (byte) 0, (byte) 0, random_seed, 6);
+		sendCommandAPDU(capdu);
 		
 		// Send the public key of the SC to the SC. IS -> SC : pubkey_sc
 		byte[] modulus = JCUtil.getBytes(currentSmartcard.getPublicKey().getModulus());

@@ -4,11 +4,9 @@ import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
@@ -58,12 +56,14 @@ public class BaseTerminal extends JPanel {
 	private static final byte GET_PUBLIC_KEY_EXPONENT = (byte) 0x03;
 
 	protected static final int BLOCKSIZE = 128;
-	protected static final int NONCESIZE = 2;
+	protected static final int NONCESIZE = 6;
 	protected static final int SCIDSIZE = 2;
 	protected static final int MILEAGESIZE = 4;
 
 	RSAHandler rsaHandler;
-	short tempNonce;
+	
+	byte[] nonce;	
+	
 	public Smartcard currentSmartcard;
 
 	// Last accessed directory of file browser.
@@ -84,6 +84,7 @@ public class BaseTerminal extends JPanel {
 		rsaHandler = new RSAHandler();
 		currentSmartcard = new Smartcard();
 		running = true;
+		nonce = new byte[NONCESIZE];
 		(new CardThread()).start();
 	}
 
@@ -321,5 +322,13 @@ public class BaseTerminal extends JPanel {
 	public void stopRunning() throws InterruptedException {
 		running = false;
 		Thread.sleep(1000);
+	}
+	
+	/**
+	 * Assigns a random value to the nonce property of this class.
+	 */
+	protected void randomizeNonce() {
+		SecureRandom random = new SecureRandom();
+		random.nextBytes(nonce);
 	}
 }
