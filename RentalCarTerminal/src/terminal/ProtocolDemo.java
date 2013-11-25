@@ -39,6 +39,7 @@ public class ProtocolDemo {
 		ProtocolDemo demo = new ProtocolDemo();
 		IssuingTerminal terminalIT = new IssuingTerminal();
 		ReceptionTerminal terminalRT = new ReceptionTerminal();
+		CarTerminal terminalCT = new CarTerminal();
 		
 		
 		// Wait 2 seconds so that the smart card can be selected.
@@ -61,6 +62,22 @@ public class ProtocolDemo {
 			
 			terminalRT.initCard();
 			terminalRT.stopRunning();
+			
+			System.out.println("-----------------");
+			System.out.println("INITIATING THE START-PHASE");
+			System.out.println("-----------------");
+			Thread.sleep(1000);
+			
+			terminalCT.startCar();
+			
+			System.out.println("-----------------");
+			System.out.println("INITIATING THE STOP-PHASE");
+			System.out.println("-----------------");
+			Thread.sleep(1000);
+			
+			terminalCT.stopCar();
+			
+			terminalCT.stopRunning();
 		}
 		catch (Exception e) {
 			System.out.println("[Error] Exception in ProtocolDemo: " + e.getMessage());
