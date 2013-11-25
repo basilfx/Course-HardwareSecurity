@@ -166,7 +166,7 @@ public class BaseTerminal extends JPanel {
 		byte[] modulus = rapdu.getData();
 		log("received pubkey_sc modulus: " + new String(modulus));
 
-		// TODO unsure of exponent length
+		// TODO: Note that the expected response is hard-coded. It would be better to first obtain the exponent length from the SC.
 		capdu = new CommandAPDU(CLA_KEYS, GET_PUBLIC_KEY_EXPONENT, (byte) 0, (byte) 0, (short) 3);
 		rapdu = sendCommandAPDU(capdu);
 		byte[] exponent = rapdu.getData();

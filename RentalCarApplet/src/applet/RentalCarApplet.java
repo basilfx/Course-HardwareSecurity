@@ -507,8 +507,6 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	private void keys(APDU apdu, byte ins){
 		
 		byte[] buf = apdu.getBuffer();
-		//short lc = (short) (buf[OFFSET_LC] & 0x00FF);
-		//readBuffer(apdu, tmp, (short)0, lc);
 		
 		switch (ins) {
 			case KEYS_START:
@@ -522,20 +520,11 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 				// Send pubkey_sc modulus.
 				pubKeySC.getModulus(buf, (short) 0);				
 				apdu.setOutgoingAndSend((short) 0, BLOCKSIZE);			
-				/*
-				pubKeySC.getModulus(buf, OFFSET_CDATA);
-				apdu.setOutgoing();
-				apdu.setOutgoingLength(BLOCKSIZE);
-				apdu.sendBytesLong(buf, OFFSET_CDATA, BLOCKSIZE);*/
 				break;
 			case GET_PUBLIC_KEY_EXPONENT:
 				// Send pubkey_sc exponent
 				pubKeySC.getExponent(buf, (short) 0);
 				apdu.setOutgoingAndSend((short) 0, (short) 3);
-				/*pubKeySC.getExponent(buf, OFFSET_CDATA);
-				apdu.setOutgoing();
-				apdu.setOutgoingLength(BLOCKSIZE);
-				apdu.sendBytesLong(buf, OFFSET_CDATA, BLOCKSIZE);*/
 				break;
 			default:
 				ISOException.throwIt(SW_INS_NOT_SUPPORTED);
