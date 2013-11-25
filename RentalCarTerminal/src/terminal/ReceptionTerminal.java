@@ -119,8 +119,7 @@ public class ReceptionTerminal extends BaseTerminal {
 			
 			
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_SIGNED_ENCRYPTED_CAR_DATA, (byte) 0, (byte) 0, getEncryptedCarData());
-			rapdu = sendCommandAPDU(capdu);
-			data = rapdu.getData();
+			sendCommandAPDU(capdu);
 			
 		} catch (Exception e) {
 			throw new CardException(e.getMessage());
@@ -188,14 +187,12 @@ public class ReceptionTerminal extends BaseTerminal {
 	}
 	//TODO fix hardcoded values
 	byte[] getEncryptedCarData() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
-		randomizeNonce();
 		short car_id = 12;
 		byte[] date = new byte[3];		
 		date[0] = 15;
 		date[1] = 11;
 		date[2] = 13;		
-		byte[] data = JCUtil.mergeByteArrays(nonce, JCUtil.shortToBytes(car_id));
-		byte[] car_data = JCUtil.mergeByteArrays(data, date);
+		byte[] car_data = JCUtil.mergeByteArrays(JCUtil.shortToBytes(car_id), date);
 		return rsaHandler.encrypt(private_key_rt, car_data);
 	}
 	
