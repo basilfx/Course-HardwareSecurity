@@ -63,14 +63,14 @@ public class IssuingTerminal extends BaseTerminal {
 		CommandAPDU capdu;
 		
 		// Send the SC id to the SC. IS -> SC : sc_id
-		capdu = new CommandAPDU(CLA_ISSUE, SET_SC_ID, (byte) 0, (byte) 0, shortToBytes(smartCardId), SCIDSIZE);
+		capdu = new CommandAPDU(CLA_ISSUE, SET_SC_ID, (byte) 0, (byte) 0, JCUtil.shortToBytes(smartCardId), SCIDSIZE);
 		ResponseAPDU rapdu = sendCommandAPDU(capdu);
 		
 		byte[] data = rapdu.getData();
-		log("Card ID has been set to: " + Short.toString(bytesToShort(data[0], data[1])));
+		log("Card ID has been set to: " + Short.toString(JCUtil.bytesToShort(data[0], data[1])));
 		
 		// Send the public key of the SC to the SC. IS -> SC : pubkey_sc
-		byte[] modulus = getBytes(currentSmartcard.getPublicKey().getModulus());
+		byte[] modulus = JCUtil.getBytes(currentSmartcard.getPublicKey().getModulus());
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_MODULUS_SC, (byte) 0, (byte) 0, modulus, modulus.length);
 		rapdu = sendCommandAPDU(capdu);
 		
@@ -86,7 +86,7 @@ public class IssuingTerminal extends BaseTerminal {
 			log("received pubkey_sc modulus: " + new String(modulusResponse));
 		}
 		
-		byte[] exponent = getBytes(currentSmartcard.getPublicKey().getPublicExponent());
+		byte[] exponent = JCUtil.getBytes(currentSmartcard.getPublicKey().getPublicExponent());
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_EXPONENT_SC, (byte) 0, (byte) 0, exponent, exponent.length);
 		rapdu = sendCommandAPDU(capdu);
 		
@@ -103,7 +103,7 @@ public class IssuingTerminal extends BaseTerminal {
 		
 		
 		// Send signature. IS -> SC : {|sc_id, pubkey_sc|}privkey_rt
-		byte[] mergedData = mergeByteArrays(shortToBytes(smartCardId), currentSmartcard.getPublicKey().getEncoded());
+		byte[] mergedData = JCUtil.mergeByteArrays(JCUtil.shortToBytes(smartCardId), currentSmartcard.getPublicKey().getEncoded());
 		byte[] signature = rsaHandler.sign(private_key_rt, mergedData);
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_SIGNATURE, (byte) 0, (byte) 0, signature, BLOCKSIZE);
 		rapdu = sendCommandAPDU(capdu);
@@ -117,21 +117,21 @@ public class IssuingTerminal extends BaseTerminal {
 		log("Has the signature correctly been set? : " + Boolean.toString(verified));
 		
 		// Send the private key of the SC to the SC. IS -> SC : IS -> SC : privkey_sc
-		modulus = getBytes(private_key_sc.getModulus());
+		modulus = JCUtil.getBytes(private_key_sc.getModulus());
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PRVATE_KEY_MODULUS_SC, (byte) 0, (byte) 0, modulus);
 		sendCommandAPDU(capdu);
 				
-		exponent = getBytes(private_key_sc.getPrivateExponent());
+		exponent = JCUtil.getBytes(private_key_sc.getPrivateExponent());
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PRIVATE_KEY_EXPONENT_SC, (byte) 0, (byte) 0, exponent);
 		sendCommandAPDU(capdu);
 		
 		
 		// Send the public key of the RT to the SC. IS -> SC : pubkey_rt
-		modulus = getBytes(public_key_rt.getModulus());
+		modulus = JCUtil.getBytes(public_key_rt.getModulus());
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_MODULUS_RT, (byte) 0, (byte) 0, modulus);
 		sendCommandAPDU(capdu);		
 		
-		exponent = getBytes(public_key_rt.getPublicExponent());
+		exponent = JCUtil.getBytes(public_key_rt.getPublicExponent());
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_EXPONENT_RT, (byte) 0, (byte) 0, exponent);
 		sendCommandAPDU(capdu);
 	}

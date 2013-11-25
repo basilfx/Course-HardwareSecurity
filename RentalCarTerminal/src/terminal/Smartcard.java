@@ -33,7 +33,7 @@ public class Smartcard{
 	}
 	
 	public boolean validateSignature(RSAPublicKey pubkey) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException{
-		byte[] data = BaseTerminal.mergeByteArrays(BaseTerminal.shortToBytes(sc_id), public_key.getEncoded());
+		byte[] data = JCUtil.mergeByteArrays(JCUtil.shortToBytes(sc_id), public_key.getEncoded());
 		RSAHandler rsaHandler = new RSAHandler();
 		return rsaHandler.verify(pubkey, data, signature);
 	}
