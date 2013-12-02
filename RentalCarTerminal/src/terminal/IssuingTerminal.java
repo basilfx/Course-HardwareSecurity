@@ -111,6 +111,10 @@ public class IssuingTerminal extends BaseTerminal {
 		}
 		
 		
+		// TODO:
+		// Ruud: klopt het dat hier alleen de signature wordt verzonden en niet de inhoud ervan?
+		// Ruud: daarna checken we of de ontvangen signature correct is mbv de public_key van de RT, maar de SC kan nooit die signature maken omdat hij de priv_key van de RT
+		//			niet heeft, toch? Of stuurt ie gewoon dezelfde signature nog een keer terug voor verificatie? Ik vind onderstaand een beetje vreemd.
 		// Send signature. IS -> SC : {|sc_id, pubkey_sc|}privkey_rt
 		byte[] mergedData = JCUtil.mergeByteArrays(JCUtil.shortToBytes(smartCardId), currentSmartcard.getPublicKey().getEncoded());
 		byte[] signature = rsaHandler.sign(private_key_rt, mergedData);
