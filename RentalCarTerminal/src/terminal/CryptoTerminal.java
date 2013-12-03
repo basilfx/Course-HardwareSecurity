@@ -21,7 +21,7 @@ import javax.smartcardio.*;
  * 
  * @version $Revision: 2.0 $
  */
-public class RentalCarTerminal extends JPanel implements ActionListener {
+public class CryptoTerminal extends JPanel implements ActionListener {
 	static final int BLOCKSIZE = 128;
 
 	static final String TITLE = "Crypto Terminal";
@@ -69,7 +69,7 @@ public class RentalCarTerminal extends JPanel implements ActionListener {
 	/**
 	 * Constructs the terminal application.
 	 */
-	public RentalCarTerminal() {
+	public CryptoTerminal() {
 		buildGUI();
 		setEnabled(false);
 		addActionListener(this);
@@ -442,7 +442,7 @@ public class RentalCarTerminal extends JPanel implements ActionListener {
 	public static void main(String[] arg) {
 		JFrame frame = new JFrame(TITLE);
 		Container c = frame.getContentPane();
-		RentalCarTerminal panel = new RentalCarTerminal();
+		CryptoTerminal panel = new CryptoTerminal();
 		c.add(panel);
 		frame.addWindowListener(new CloseEventListener());
 		frame.pack();
