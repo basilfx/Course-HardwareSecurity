@@ -14,33 +14,33 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import terminal.CarTerminal;
-import terminal.IssuingTerminal;
+import terminal.CarCommandsHandler;
+import terminal.IssuingCommandsHandler;
 import terminal.JCUtil;
-import terminal.ReceptionTerminal;
+import terminal.ReceptionCommandsHandler;
 import terminal.Smartcard;
 import encryption.RSAHandler;
 
 public class TerminalTest {
 	
-	IssuingTerminal issueingTerminal;
-	ReceptionTerminal receptionTerminal;
-	CarTerminal carTerminal;
+	IssuingCommandsHandler issueingTerminal;
+	ReceptionCommandsHandler receptionTerminal;
+	CarCommandsHandler carTerminal;
 	static short smartCardId = 3489;
 	RSAHandler rsaHandler;
 
 	@BeforeClass
 	public static void classSetup() throws Exception{
-		IssuingTerminal tempIT = new IssuingTerminal();
+		IssuingCommandsHandler tempIT = new IssuingCommandsHandler();
 		tempIT.issueCard(smartCardId);
 	}
 
 	@Before
 	public void setUp() throws Exception {
 		rsaHandler = new RSAHandler();
-		issueingTerminal = new IssuingTerminal();
-		receptionTerminal = new ReceptionTerminal();
-		carTerminal = new CarTerminal();		
+		issueingTerminal = new IssuingCommandsHandler();
+		receptionTerminal = new ReceptionCommandsHandler();
+		carTerminal = new CarCommandsHandler();		
 	}
 
 	@After
@@ -58,7 +58,7 @@ public class TerminalTest {
 	
 	@Test (expected = CardException.class)
 	public void testIssue() throws Exception{
-		issueingTerminal = new IssuingTerminal();
+		issueingTerminal = new IssuingCommandsHandler();
 	}
 	
 	@Test

@@ -11,7 +11,6 @@ import java.util.Arrays;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import javax.smartcardio.CardChannel;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
@@ -20,7 +19,7 @@ import javax.smartcardio.ResponseAPDU;
  * Car terminal for the Rental Car applet.
  * 
  */
-public class CarTerminal extends BaseTerminal{
+public class CarCommandsHandler extends BaseCommandsHandler{
 
 	/** Start Bytes */
 	private static final byte CLA_START = (byte) 0xB5;
@@ -32,14 +31,6 @@ public class CarTerminal extends BaseTerminal{
 	private static final byte STOP_CAR = (byte) 0x01;
 	private static final byte SET_FINAL_MILEAGE = (byte) 0x02;
 	private static final byte FINAL_MILEAGE_SIGNATURE = (byte) 0x03;
-
-	
-	
-	private static final int STATE_INIT = 0;
-	private static final int STATE_ISSUED = 1;
-
-	/** The card applet. */
-	CardChannel applet;
 
 	
 	/** Car terminal data */
@@ -56,8 +47,8 @@ public class CarTerminal extends BaseTerminal{
 	 * @throws InvalidKeySpecException 
 	 * @throws NoSuchAlgorithmException 
 	 */
-	public CarTerminal() throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
-		super();
+	public CarCommandsHandler(Terminal terminal) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+		super(terminal);
 		public_key_ct = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_ct");
 		public_key_rt = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_rt");
 		private_key_ct = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_ct");
@@ -67,28 +58,28 @@ public class CarTerminal extends BaseTerminal{
 
 
 
-	public void startCar() throws CardException {
+	public void startCar(Smartcard currentSmartcard) throws CardException {
 		try {
-			getKeys();
+			getKeys(currentSmartcard);
 			
 			// Set the start mileage and retrieve the response to the nonce-challenge.
 			CommandAPDU capdu = new CommandAPDU(CLA_START, SET_START_MILEAGE, (byte) 0, (byte) 0, getEncryptedNonceAndMileage(), BLOCKSIZE);
-			ResponseAPDU rapdu = sendCommandAPDU(capdu);
+			ResponseAPDU rapdu = terminal.sendCommandAPDU(capdu);
 			
 			byte[] retrievedNonceAndCarData = rapdu.getData();
 			byte[] return_nonce = checkCarData(retrievedNonceAndCarData);
 			
 			// Check the signature
 			capdu = new CommandAPDU(CLA_START, GET_CAR_DATA_SIGNATURE, (byte) 0, (byte) 0, BLOCKSIZE);
-			rapdu = sendCommandAPDU(capdu);
+			rapdu = terminal.sendCommandAPDU(capdu);
 			
 			boolean verified = rsaHandler.verify(currentSmartcard.getPublicKey(), retrievedNonceAndCarData, rapdu.getData());
-			log("Has the signature correctly been set? : " + Boolean.toString(verified));
+			JCUtil.log("Has the signature correctly been set? : " + Boolean.toString(verified));
 			
 			// Check the nonce.
 			if (Arrays.equals(return_nonce, nonce)) {
 				car_may_start = true;
-				log("The car is allowed to start!");
+				JCUtil.log("The car is allowed to start!");
 			}
 		} catch (Exception e) {
 			throw new CardException(e.getMessage());
@@ -98,19 +89,19 @@ public class CarTerminal extends BaseTerminal{
 	public void stopCar() throws CardException {
 		try {
 			CommandAPDU capdu = new CommandAPDU(CLA_STOP, STOP_CAR, (byte) 0, (byte) 0, NONCESIZE);
-			ResponseAPDU rapdu = sendCommandAPDU(capdu);
+			ResponseAPDU rapdu = terminal.sendCommandAPDU(capdu);
 			byte[] data = rapdu.getData();
 			byte[] receivedNonce = JCUtil.subArray(data, 0, NONCESIZE);
 			
 			// Send final mileage.
 			byte[] encryptedNonceAndMileage = getEncryptedNonceAndMileage();
 			capdu = new CommandAPDU(CLA_STOP, SET_FINAL_MILEAGE, (byte) 0, (byte) 0, encryptedNonceAndMileage);
-			sendCommandAPDU(capdu);
+			terminal.sendCommandAPDU(capdu);
 			
 			// Send signature of final mileage and receivedNonce.
 			byte[] signature = rsaHandler.sign(private_key_ct, JCUtil.mergeByteArrays(receivedNonce, encryptedNonceAndMileage));
 			capdu = new CommandAPDU(CLA_STOP, FINAL_MILEAGE_SIGNATURE, (byte) 0, (byte) 0, signature);
-			sendCommandAPDU(capdu);
+			terminal.sendCommandAPDU(capdu);
 		} catch (Exception e) {
 			throw new CardException(e.getMessage());
 		}

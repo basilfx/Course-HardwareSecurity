@@ -23,7 +23,7 @@ import encryption.RSAHandler;
  * 
  * @author	Group 3.
  */
-public class ReceptionTerminal extends BaseTerminal {
+public class ReceptionCommandsHandler extends BaseCommandsHandler {
 	
 	/** Init Bytes */
 	private static final byte CLA_INIT = (byte) 0xB2;
@@ -45,11 +45,6 @@ public class ReceptionTerminal extends BaseTerminal {
 	private static final byte CLA_RESET = (byte) 0xB4;
 	private static final byte RESET_CARD = (byte) 0x01;
 
-
-	// The card applet.
-	CardChannel applet;
-	
-	RSAHandler rsaHandler;
 	
 	RSAPublicKey pubic_key_sc;
 	RSAPublicKey public_key_ct;
@@ -65,19 +60,19 @@ public class ReceptionTerminal extends BaseTerminal {
 	 * @throws InvalidKeySpecException 
 	 * @throws NoSuchAlgorithmException 
 	 */
-	public ReceptionTerminal() throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
-		super();
+	public ReceptionCommandsHandler(Terminal terminal) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+		super(terminal);
 		rsaHandler = new RSAHandler();
 		public_key_ct = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_ct");
 		public_key_rt = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_rt");
 		private_key_rt = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_rt");
 	}
 	
-	public void initCard() throws CardException {
+	public void initCard(Smartcard currentSmartcard) throws CardException {
 		try {
 			// RT -> SC: init
 			// SC -> RT: {|sc_id,pubkey_sc|}privkey_rt		
-			getKeys();
+			getKeys(currentSmartcard);
 			
 			// Because pubkey_sc is known to the public (the APDU's in the getKeys() method can be forged by everyone), we should
 			// make it infeasible for an attacker to pre-compute {|N1|}pubkey_sc for every (or a substantial part of) the possible N1's.
@@ -90,26 +85,26 @@ public class ReceptionTerminal extends BaseTerminal {
 			// SC -> RT: N1
 			// [RT: if N1 = N1 then SC is authenticated]				
 			CommandAPDU capdu = new CommandAPDU(CLA_INIT, INIT_START, (byte) 0, (byte) 0, nonce, NONCESIZE);
-			ResponseAPDU rapdu = sendCommandAPDU(capdu);
+			ResponseAPDU rapdu = terminal.sendCommandAPDU(capdu);
 			byte[] data = rapdu.getData();
 			if (Arrays.equals(nonce, data)) {
 				// were fine!
-				log("The nonces match! The SC is now authenticated to the RT.");
+				JCUtil.log("The nonces match! The SC is now authenticated to the RT.");
 			} else {
 				//Oh noes!, throw exception or something
-				log("ERROR! The nonces do not match! The SC has not been authenticated to the RT.");
+				JCUtil.log("ERROR! The nonces do not match! The SC has not been authenticated to the RT.");
 				// TODO: Ruud: moeten we hier niet exiten?
 				//exit();				
 			}
 			// SC -> RT {|N2|}pubkey_rt
 			// RT -> N2			
 			capdu = new CommandAPDU(CLA_INIT, INIT_AUTHENTICATED, (byte) 0, (byte) 0, BLOCKSIZE);
-			rapdu = sendCommandAPDU(capdu);
+			rapdu = terminal.sendCommandAPDU(capdu);
 			byte[] encrypted_nonce = rapdu.getData();
 			byte[] decrypted_nonce = rsaHandler.decrypt(private_key_rt, encrypted_nonce);
 			
 			capdu = new CommandAPDU(CLA_INIT, INIT_SECOND_NONCE, (byte) 0, (byte) 0, decrypted_nonce);
-			sendCommandAPDU(capdu);
+			terminal.sendCommandAPDU(capdu);
 			
 			
 			// TODO: Ruud: Moeten deze niet gesigned worden?
@@ -117,12 +112,12 @@ public class ReceptionTerminal extends BaseTerminal {
 			//byte[] car_public_key_modulus = rsaHandler.encrypt(private_key_rt, public_key_ct.getModulus().toByteArray());
 			byte[] car_public_key_modulus = JCUtil.getBytes(public_key_ct.getModulus());
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_CAR_KEY_MODULUS, (byte) 0, (byte) 0, car_public_key_modulus);
-			sendCommandAPDU(capdu);
+			terminal.sendCommandAPDU(capdu);
 			
 			//byte[] car_public_key_exponent = rsaHandler.encrypt(private_key_rt, public_key_ct.getPublicExponent().toByteArray());
 			byte[] car_public_key_exponent = JCUtil.getBytes(public_key_ct.getPublicExponent());
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_CAR_KEY_EXPONENT, (byte) 0, (byte) 0, car_public_key_exponent);
-			sendCommandAPDU(capdu);
+			terminal.sendCommandAPDU(capdu);
 			
 			/*byte[] car_public_key = mergeByteArrays(car_public_key_modulus, car_public_key_exponent);
 			byte[] signature = rsaHandler.sign(private_key_rt, car_public_key);
@@ -133,42 +128,42 @@ public class ReceptionTerminal extends BaseTerminal {
 
 			// RT->SC: {|car_id, date, sc_id, N0|}pubkey_ct			
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_SIGNED_ENCRYPTED_CAR_DATA, (byte) 0, (byte) 0, getEncryptedCarData());
-			sendCommandAPDU(capdu);
+			terminal.sendCommandAPDU(capdu);
 			
 		} catch (Exception e) {
 			throw new CardException(e.getMessage());
 		}
 	}
 	// TODO: real implementation
-	public void read() throws CardException {
+	public void read(Smartcard currentSmartcard) throws CardException {
 		try {
-			getKeys();
+			getKeys(currentSmartcard);
 			
 			randomizeNonce();
 			
 			byte[] data = rsaHandler.encrypt(currentSmartcard.getPublicKey(), nonce);
 			CommandAPDU capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_SIGNED_NONCE, (byte) 0, (byte) 0, data, NONCESIZE);
-			ResponseAPDU rapdu = sendCommandAPDU(capdu);
+			ResponseAPDU rapdu = terminal.sendCommandAPDU(capdu);
 			data = rapdu.getData();
 
 			if (Arrays.equals(nonce, data)){
 				// were fine!
-				log("The nonces match! The SC is now authenticated to the RT.");
+				JCUtil.log("The nonces match! The SC is now authenticated to the RT.");
 			} else {
 				//Oh noes!, throw exception or something
-				log("ERROR! The nonces do not match! The SC has not been authenticated to the RT.");
+				JCUtil.log("ERROR! The nonces do not match! The SC has not been authenticated to the RT.");
 				// TODO: Ruud: moeten we hier niet exiten?
 				//exit();
 			}
 			
 			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_START_MILEAGE, (byte) 0, (byte) 0, NONCESIZE + MILEAGESIZE + BLOCKSIZE);
-			rapdu = sendCommandAPDU(capdu);
+			rapdu = terminal.sendCommandAPDU(capdu);
 			data = rapdu.getData();
 			verifyMileage(data);
 			
 			
 			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_FINAL_MILEAGE, (byte) 0, (byte) 0, BLOCKSIZE);
-			rapdu = sendCommandAPDU(capdu);
+			rapdu = terminal.sendCommandAPDU(capdu);
 			data = rapdu.getData();
 			verifyMileage(data);
 			
@@ -189,7 +184,7 @@ public class ReceptionTerminal extends BaseTerminal {
 		
 		// TODO: Ruud: Wat doet dit precies? De arrays gaan nooit hetzelfde zijn omdat je de gedecrypte en geunsignde versie vergelijkt met de geencrypte en gesignde versie
 		// TODO: Ruud: we kunnen de 'mileage' of '-1' returnen?		
-		if (JCUtil.compareArrays(JCUtil.mergeByteArrays(nonce, mileage), nonce_mileage)){
+		if (Arrays.equals(JCUtil.mergeByteArrays(nonce, mileage), nonce_mileage)){
 			//store values
 		} else {
 			//exception
@@ -199,7 +194,7 @@ public class ReceptionTerminal extends BaseTerminal {
 	public void reset() throws CardException {
 		try {
 			CommandAPDU capdu = new CommandAPDU(CLA_RESET, RESET_CARD, (byte) 0, (byte) 0);
-			ResponseAPDU rapdu = sendCommandAPDU(capdu);
+			ResponseAPDU rapdu = terminal.sendCommandAPDU(capdu);
 			byte[] data = rapdu.getData();
 			
 		} catch (Exception e) {

@@ -2,9 +2,13 @@ package terminal;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 
 import javax.smartcardio.CardException;
+
+import encryption.RSAHandler;
 
 /**
  * An application that runs a demo of the car rental protocol.
@@ -15,11 +19,12 @@ public class ProtocolDemo {
 	
 	private short smartCartId;
 
+
 	/**
 	 * Constructor.
 	 */
 	public ProtocolDemo() {
-		smartCartId = (short) 1337;
+		smartCartId = (short) 1337;		
 	}
 	
 	public short getSmartCartId() {
@@ -37,9 +42,11 @@ public class ProtocolDemo {
 	 */
 	public static void main(String[] arg) throws InterruptedException, NoSuchAlgorithmException, InvalidKeySpecException, IOException {
 		ProtocolDemo demo = new ProtocolDemo();
-		IssuingTerminal terminalIT = new IssuingTerminal();
-		ReceptionTerminal terminalRT = new ReceptionTerminal();
-		CarTerminal terminalCT = new CarTerminal();
+		Terminal terminal = new Terminal();
+		
+		IssuingCommandsHandler issuingCommands = new IssuingCommandsHandler(terminal);
+		ReceptionCommandsHandler receptionCommands = new ReceptionCommandsHandler(terminal);
+		CarCommandsHandler carCommands = new CarCommandsHandler(terminal);
 		
 		
 		// Wait 2 seconds so that the smart card can be selected.
@@ -52,32 +59,36 @@ public class ProtocolDemo {
 			System.out.println("INITIATING THE ISSUE-PHASE");
 			System.out.println("-----------------");
 			
-			terminalIT.issueCard(demo.getSmartCartId());
-			terminalIT.stopRunning();
+			RSAHandler rsaHandler = new RSAHandler();
+			Smartcard smartcard = new Smartcard();
+			smartcard.setScId(demo.getSmartCartId());			
+			RSAPublicKey public_key_sc = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_sc");
+			smartcard.setPublicKey(public_key_sc);
+			
+			issuingCommands.issueCard(smartcard);
 			
 			System.out.println("-----------------");
 			System.out.println("INITIATING THE INIT-PHASE");
 			System.out.println("-----------------");
 			Thread.sleep(1000);
 			
-			terminalRT.initCard();
-			terminalRT.stopRunning();
+			receptionCommands.initCard(smartcard);
 			
 			System.out.println("-----------------");
 			System.out.println("INITIATING THE START-PHASE");
 			System.out.println("-----------------");
 			Thread.sleep(1000);
 			
-			terminalCT.startCar();
+			carCommands.startCar(smartcard);
 			
 			System.out.println("-----------------");
 			System.out.println("INITIATING THE STOP-PHASE");
 			System.out.println("-----------------");
 			Thread.sleep(1000);
 			
-			terminalCT.stopCar();
+			carCommands.stopCar();
 			
-			terminalCT.stopRunning();
+			terminal.stopRunning();
 		}
 		catch (Exception e) {
 			System.out.println("[Error] Exception in ProtocolDemo: " + e.getMessage());
