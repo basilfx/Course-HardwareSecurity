@@ -175,9 +175,28 @@ public class TerminalChooser {
 			// Clear button
 			Button clear = new Button(this.group, SWT.None);
 			
+			clear.setText("Clear log");
+			clear.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+			
+			clear.addListener(SWT.Selection, new Listener() {
+				@Override
+				public void handleEvent(Event e) {
+					View.this.log.removeAll();
+				}
+			});
 			
 			// Marker button
 			Button mark = new Button(this.group, SWT.None);
+			
+			mark.setText("Add marker");
+			mark.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+			
+			mark.addListener(SWT.Selection, new Listener() {
+				@Override
+				public void handleEvent(Event e) {
+					View.this.addLogItem("===================================");
+				}
+			});
 		}
 		
 		public void setStatus(String status) {
