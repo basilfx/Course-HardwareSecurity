@@ -1,7 +1,9 @@
 package terminal;
 
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 
 import javax.crypto.Cipher;
@@ -33,12 +35,24 @@ public class BaseCommandsHandler {
 	
 	protected Terminal terminal;
 	
-	public BaseCommandsHandler(Terminal terminal){
+	protected RSAPublicKey public_key_rt;
+	
+	public BaseCommandsHandler(Terminal terminal) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException{
 		rsaHandler = new RSAHandler();
 		nonce = new byte[NONCESIZE];
 		this.terminal = terminal;
+		public_key_rt = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_rt");
+
 	}
 
+	/**
+	 * Obtains the keys, id and signature from the smartcard and verifies them.
+	 * @param currentSmartcard - A Smart Card instance. 
+	 * This method will set the public key, the smartcard id and the signature of this instance.
+	 * @throws CardException
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidKeySpecException
+	 */
 	public void getKeys(Smartcard currentSmartcard) throws CardException, NoSuchAlgorithmException, InvalidKeySpecException {
 		CommandAPDU capdu = new CommandAPDU(CLA_KEYS, KEYS_START, (byte) 0, (byte) 0, SCIDSIZE + BLOCKSIZE);
 		ResponseAPDU rapdu = terminal.sendCommandAPDU(capdu);

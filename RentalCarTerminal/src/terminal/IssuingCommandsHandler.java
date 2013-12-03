@@ -1,19 +1,14 @@
 package terminal;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 
-import javax.smartcardio.CardChannel;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
-
-import encryption.RSAHandler;
 
 /**
  * Issuing Terminal application.
@@ -36,8 +31,6 @@ public class IssuingCommandsHandler extends BaseCommandsHandler{
 	private static final byte SET_PUBLIC_KEY_EXPONENT_RT = (byte) 0x08;
 	private static final byte SET_RANDOM_DATA_SEED = (byte) 0x09;
 
-	RSAPublicKey public_key_rt;
-	RSAPrivateKey private_key_sc;
 	RSAPrivateKey private_key_rt;
 
 	/**
@@ -48,16 +41,16 @@ public class IssuingCommandsHandler extends BaseCommandsHandler{
 	 */
 	public IssuingCommandsHandler(Terminal terminal) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
 		super(terminal);
-		public_key_rt = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_rt");
 		private_key_rt = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_rt");
-		private_key_sc = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_sc");
 	}
 
 	/**
-	 * Issues the card.
-	 * 
-	 * @param Integer
-	 *            smartCardId The ID of the SC.
+	 * Issues the smartcard, using the data supplied in currentSmartcard.
+	 * @param currentSmartcard - an instance of Smartcard, its data will be pushed to the connected smartcard.
+	 * @require currentSmartcard.getPublicKey != null
+	 * @require currentSmartcard.getPrivateKey != null
+	 * @require currentSmartcard.getId != null.
+	 * @throws Exception
 	 */
 	public void issueCard(Smartcard currentSmartcard) throws Exception {
 		
@@ -129,11 +122,11 @@ public class IssuingCommandsHandler extends BaseCommandsHandler{
 		JCUtil.log("Has the signature correctly been set? : " + Boolean.toString(verified));
 		
 		// Send the private key of the SC to the SC. IS -> SC : IS -> SC : privkey_sc
-		modulus = JCUtil.getBytes(private_key_sc.getModulus());
+		modulus = JCUtil.getBytes(currentSmartcard.getPrivateKey().getModulus());
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PRVATE_KEY_MODULUS_SC, (byte) 0, (byte) 0, modulus);
 		terminal.sendCommandAPDU(capdu);
 				
-		exponent = JCUtil.getBytes(private_key_sc.getPrivateExponent());
+		exponent = JCUtil.getBytes(currentSmartcard.getPrivateKey().getPrivateExponent());
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PRIVATE_KEY_EXPONENT_SC, (byte) 0, (byte) 0, exponent);
 		terminal.sendCommandAPDU(capdu);
 		

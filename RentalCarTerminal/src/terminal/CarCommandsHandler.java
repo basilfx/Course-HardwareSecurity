@@ -18,6 +18,8 @@ import javax.smartcardio.ResponseAPDU;
 /**
  * Car terminal for the Rental Car applet.
  * 
+ * @author Jelte & Erwin.
+ * 
  */
 public class CarCommandsHandler extends BaseCommandsHandler{
 
@@ -36,9 +38,6 @@ public class CarCommandsHandler extends BaseCommandsHandler{
 	/** Car terminal data */
 	boolean car_may_start = false;
 	private int mileage;
-	RSAPublicKey public_key_ct;
-	RSAPublicKey public_key_rt;
-	RSAPrivateKey private_key_ct;
 	
 
 	/**
@@ -49,25 +48,30 @@ public class CarCommandsHandler extends BaseCommandsHandler{
 	 */
 	public CarCommandsHandler(Terminal terminal) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
 		super(terminal);
-		public_key_ct = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_ct");
-		public_key_rt = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_rt");
-		private_key_ct = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_ct");
-		
+	
 		mileage = 0;
 	}
 
 
 
-	public void startCar(Smartcard currentSmartcard) throws CardException {
+	/**
+	 * Starts the car.
+	 * @param car - Car object which represents the currently used car.
+	 * @require car.getPrivateKey() != null.
+	 * @require car.id != null.
+	 * @throws CardException
+	 */
+	public void startCar(Car car) throws CardException {
 		try {
+			Smartcard currentSmartcard = new Smartcard();
 			getKeys(currentSmartcard);
 			
 			// Set the start mileage and retrieve the response to the nonce-challenge.
-			CommandAPDU capdu = new CommandAPDU(CLA_START, SET_START_MILEAGE, (byte) 0, (byte) 0, getEncryptedNonceAndMileage(), BLOCKSIZE);
+			CommandAPDU capdu = new CommandAPDU(CLA_START, SET_START_MILEAGE, (byte) 0, (byte) 0, getEncryptedNonceAndMileage(car), BLOCKSIZE);
 			ResponseAPDU rapdu = terminal.sendCommandAPDU(capdu);
 			
 			byte[] retrievedNonceAndCarData = rapdu.getData();
-			byte[] return_nonce = checkCarData(retrievedNonceAndCarData);
+			byte[] return_nonce = checkCarData(car, retrievedNonceAndCarData);
 			
 			// Check the signature
 			capdu = new CommandAPDU(CLA_START, GET_CAR_DATA_SIGNATURE, (byte) 0, (byte) 0, BLOCKSIZE);
@@ -86,7 +90,13 @@ public class CarCommandsHandler extends BaseCommandsHandler{
 		}
 	}
 
-	public void stopCar() throws CardException {
+	/**
+	 * Stops the car.
+	 * @param car - Car object which represents the currently used car.
+	 * @require car.getPrivateKey() != null.
+	 * @throws CardException
+	 */
+	public void stopCar(Car car) throws CardException {
 		try {
 			CommandAPDU capdu = new CommandAPDU(CLA_STOP, STOP_CAR, (byte) 0, (byte) 0, NONCESIZE);
 			ResponseAPDU rapdu = terminal.sendCommandAPDU(capdu);
@@ -94,12 +104,12 @@ public class CarCommandsHandler extends BaseCommandsHandler{
 			byte[] receivedNonce = JCUtil.subArray(data, 0, NONCESIZE);
 			
 			// Send final mileage.
-			byte[] encryptedNonceAndMileage = getEncryptedNonceAndMileage();
+			byte[] encryptedNonceAndMileage = getEncryptedNonceAndMileage(car);
 			capdu = new CommandAPDU(CLA_STOP, SET_FINAL_MILEAGE, (byte) 0, (byte) 0, encryptedNonceAndMileage);
 			terminal.sendCommandAPDU(capdu);
 			
 			// Send signature of final mileage and receivedNonce.
-			byte[] signature = rsaHandler.sign(private_key_ct, JCUtil.mergeByteArrays(receivedNonce, encryptedNonceAndMileage));
+			byte[] signature = rsaHandler.sign(car.getPrivateKey(), JCUtil.mergeByteArrays(receivedNonce, encryptedNonceAndMileage));
 			capdu = new CommandAPDU(CLA_STOP, FINAL_MILEAGE_SIGNATURE, (byte) 0, (byte) 0, signature);
 			terminal.sendCommandAPDU(capdu);
 		} catch (Exception e) {
@@ -108,16 +118,40 @@ public class CarCommandsHandler extends BaseCommandsHandler{
 	}
 
 	//TODO: check if this implementation is actually safe....
-	byte[] getEncryptedNonceAndMileage() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
+	/**
+	 * Encrypts a nonce and the current mileage using the private key of the currently used car.
+	 * @param car - Car object which represents the currently used car.
+	 * @require car.getPrivateKey() != null.
+	 * @return A nonce and the current mileage encrypted with car.getPrivateKey()
+	 * @throws InvalidKeyException
+	 * @throws NoSuchAlgorithmException
+	 * @throws NoSuchPaddingException
+	 * @throws IllegalBlockSizeException
+	 * @throws BadPaddingException
+	 */
+	byte[] getEncryptedNonceAndMileage(Car car) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
 		randomizeNonce();
 		byte[] bytes_mileage = JCUtil.intToBytes(mileage);
 		//byte[] encrypted_mileage = rsaHandler.encrypt(public_key_rt, JCUtil.mergeByteArrays(bytes_nonce, bytes_mileage));
-		byte[] encrypted_mileage = rsaHandler.encrypt(private_key_ct, JCUtil.mergeByteArrays(nonce, bytes_mileage));
+		byte[] encrypted_mileage = rsaHandler.encrypt(car.getPrivateKey(), JCUtil.mergeByteArrays(nonce, bytes_mileage));
 		return encrypted_mileage;
 	}
 	
 	//TODO check if data is actually correct
-	byte[] checkCarData(byte[] data) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
+	/**
+	 * Checks the received data against the currently used car, 
+	 * and checks whether the date is still valid.
+	 * @param car - the currently used car.
+	 * @param data - The received car data.
+	 * @require car.getId() != null.
+	 * @return the nonce.
+	 * @throws InvalidKeyException
+	 * @throws NoSuchAlgorithmException
+	 * @throws NoSuchPaddingException
+	 * @throws IllegalBlockSizeException
+	 * @throws BadPaddingException
+	 */
+	byte[] checkCarData(Car car, byte[] data) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
 		byte[] nonce = JCUtil.subArray(data, 0, NONCESIZE);
 		byte[] car_data = JCUtil.subArray(data, NONCESIZE, BLOCKSIZE);
 		short decrypted_car_id = JCUtil.bytesToShort(car_data[0], car_data[1]);

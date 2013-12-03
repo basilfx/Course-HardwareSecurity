@@ -4,14 +4,12 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import javax.smartcardio.CardChannel;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
@@ -46,13 +44,8 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 	private static final byte RESET_CARD = (byte) 0x01;
 
 	
-	RSAPublicKey pubic_key_sc;
-	RSAPublicKey public_key_ct;
-	RSAPublicKey public_key_rt;
 	RSAPrivateKey private_key_rt;
 	
-	public int start_mileage;
-	public int final_mileage;
 
 	/**
 	 * Constructs the terminal application.
@@ -63,12 +56,19 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 	public ReceptionCommandsHandler(Terminal terminal) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
 		super(terminal);
 		rsaHandler = new RSAHandler();
-		public_key_ct = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_ct");
-		public_key_rt = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_rt");
 		private_key_rt = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_rt");
 	}
 	
-	public void initCard(Smartcard currentSmartcard) throws CardException {
+	/**
+	 * Initializes the smartcard
+	 * @param currentSmartcard - the currently used smartcard.
+	 * @param car - The car which this smartcard may start.
+	 * @require car.getPulicKey != null.
+	 * @require car.getId != null.
+	 * @require car.date != null.
+	 * @throws CardException
+	 */
+	public void initCard(Smartcard currentSmartcard, Car car) throws CardException {
 		try {
 			// RT -> SC: init
 			// SC -> RT: {|sc_id,pubkey_sc|}privkey_rt		
@@ -110,12 +110,12 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			// TODO: Ruud: Moeten deze niet gesigned worden?
 			// RT -> SC: {|pubkey_ct|}privkey_rt			
 			//byte[] car_public_key_modulus = rsaHandler.encrypt(private_key_rt, public_key_ct.getModulus().toByteArray());
-			byte[] car_public_key_modulus = JCUtil.getBytes(public_key_ct.getModulus());
+			byte[] car_public_key_modulus = JCUtil.getBytes(car.getPublicKey().getModulus());
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_CAR_KEY_MODULUS, (byte) 0, (byte) 0, car_public_key_modulus);
 			terminal.sendCommandAPDU(capdu);
 			
 			//byte[] car_public_key_exponent = rsaHandler.encrypt(private_key_rt, public_key_ct.getPublicExponent().toByteArray());
-			byte[] car_public_key_exponent = JCUtil.getBytes(public_key_ct.getPublicExponent());
+			byte[] car_public_key_exponent = JCUtil.getBytes(car.getPublicKey().getPublicExponent());
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_CAR_KEY_EXPONENT, (byte) 0, (byte) 0, car_public_key_exponent);
 			terminal.sendCommandAPDU(capdu);
 			
@@ -127,7 +127,7 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			
 
 			// RT->SC: {|car_id, date, sc_id, N0|}pubkey_ct			
-			capdu = new CommandAPDU(CLA_INIT, INIT_SET_SIGNED_ENCRYPTED_CAR_DATA, (byte) 0, (byte) 0, getEncryptedCarData());
+			capdu = new CommandAPDU(CLA_INIT, INIT_SET_SIGNED_ENCRYPTED_CAR_DATA, (byte) 0, (byte) 0, getEncryptedCarData(car));
 			terminal.sendCommandAPDU(capdu);
 			
 		} catch (Exception e) {
@@ -135,7 +135,16 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 		}
 	}
 	// TODO: real implementation
-	public void read(Smartcard currentSmartcard) throws CardException {
+	/**
+	 * Reads the mileage from the smartcard.
+	 * @param currentSmartcard - The currently used smartcard.
+	 * @param car - The car which to read the mileage from.
+	 * 				Sets the start mileage and the final mileage of this car instance.
+	 * @require car.getPublicKey != null.
+	 * 
+	 * @throws CardException
+	 */
+	public void read(Smartcard currentSmartcard, Car car) throws CardException {
 		try {
 			getKeys(currentSmartcard);
 			
@@ -159,13 +168,14 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_START_MILEAGE, (byte) 0, (byte) 0, NONCESIZE + MILEAGESIZE + BLOCKSIZE);
 			rapdu = terminal.sendCommandAPDU(capdu);
 			data = rapdu.getData();
-			verifyMileage(data);
-			
+			int start_mileage = verifyAndReturnMileage(car, data);
+			car.setStartMileage(start_mileage);
 			
 			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_FINAL_MILEAGE, (byte) 0, (byte) 0, BLOCKSIZE);
 			rapdu = terminal.sendCommandAPDU(capdu);
 			data = rapdu.getData();
-			verifyMileage(data);
+			int final_mileage = verifyAndReturnMileage(car, data);
+			car.setFinalMileage(final_mileage);
 			
 		} catch (Exception e) {
 			throw new CardException(e.getMessage());
@@ -173,13 +183,25 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 	}
 	
 	//TODO: unsure if correct
-	public void verifyMileage(byte[] data) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
+	/**
+	 * Verifies the signed nonce and mileage and returns the nonce incase the verification succeeds.
+	 * @param car - The car instance corresponding to the data.
+	 * @param data - The received data containing a nonce, mileage and signature
+	 * @require car.getPublicKey != null.
+	 * @return the nonce.
+	 * @throws InvalidKeyException
+	 * @throws NoSuchAlgorithmException
+	 * @throws NoSuchPaddingException
+	 * @throws IllegalBlockSizeException
+	 * @throws BadPaddingException
+	 */
+	private int verifyAndReturnMileage(Car car, byte[] data) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
 		byte[] nonce = JCUtil.subArray(data, 0, NONCESIZE);
 		byte[] mileage = JCUtil.subArray(data, NONCESIZE, MILEAGESIZE);
 		byte[] encrypted_signed_mileage = JCUtil.subArray(data, NONCESIZE + MILEAGESIZE, BLOCKSIZE);
 		byte[] signed_mileage = rsaHandler.decrypt(private_key_rt, encrypted_signed_mileage);
 		// TODO: Ruud: moet hier niet gewoon de signature van worden geverified en afgestript
-		byte[] unsigned_mileage = rsaHandler.decrypt(public_key_ct, signed_mileage);
+		byte[] unsigned_mileage = rsaHandler.decrypt(car.getPublicKey(), signed_mileage);
 		byte[] nonce_mileage = JCUtil.subArray(unsigned_mileage, 0, NONCESIZE + MILEAGESIZE);
 		
 		// TODO: Ruud: Wat doet dit precies? De arrays gaan nooit hetzelfde zijn omdat je de gedecrypte en geunsignde versie vergelijkt met de geencrypte en gesignde versie
@@ -189,32 +211,40 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 		} else {
 			//exception
 		}
+		return JCUtil.bytesToInt(mileage);
 	}
 
+	/**
+	 * Resets the smartcard, removing all data, returning it to the issued state.
+	 * @throws CardException
+	 */
 	public void reset() throws CardException {
 		try {
 			CommandAPDU capdu = new CommandAPDU(CLA_RESET, RESET_CARD, (byte) 0, (byte) 0);
-			ResponseAPDU rapdu = terminal.sendCommandAPDU(capdu);
-			byte[] data = rapdu.getData();
+			terminal.sendCommandAPDU(capdu);
 			
 		} catch (Exception e) {
 			throw new CardException(e.getMessage());
 		}
 	}
 	
-	//TODO fix hardcoded values
-	// TODO: Ruud: is dat echt een ramp?
-	byte[] getEncryptedCarData() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
+	/**
+	 * Encrypts the id and date of the supplied car and encrypts them.
+	 * @param car - The car instance of which the data will be encrypted.
+	 * @require car.id != null.
+	 * @require car.date != null.
+	 * @return The encrypted id and date of the supplied car instance.
+	 * @throws InvalidKeyException
+	 * @throws NoSuchAlgorithmException
+	 * @throws NoSuchPaddingException
+	 * @throws IllegalBlockSizeException
+	 * @throws BadPaddingException
+	 */
+	private byte[] getEncryptedCarData(Car car) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
 		// TODO: Ruud: moet hier niet ook de sc_id in?	
-		// TODO: Ruud: moet dit niet ook signed zijn?
-		short car_id = 12;
-		byte[] date = new byte[3];		
-		date[0] = 15;
-		date[1] = 11;
-		date[2] = 13;		
-		byte[] car_data = JCUtil.mergeByteArrays(JCUtil.shortToBytes(car_id), date);
+		// TODO: Ruud: moet dit niet ook signed zijn?		
+		byte[] car_data = JCUtil.mergeByteArrays(JCUtil.shortToBytes(car.getId()), car.getDate());
 		return rsaHandler.encrypt(private_key_rt, car_data);
 	}
-	
-	
+		
 }

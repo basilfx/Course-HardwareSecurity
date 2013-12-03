@@ -14,6 +14,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import terminal.Car;
 import terminal.CarCommandsHandler;
 import terminal.IssuingCommandsHandler;
 import terminal.JCUtil;
@@ -30,6 +31,7 @@ public class TerminalTest {
 	static RSAHandler rsaHandler;
 	static Terminal terminal;
 	static Smartcard smartcard;
+	static Car car;
 	
 	static short testSC_ID = 123;
 
@@ -47,6 +49,16 @@ public class TerminalTest {
 		smartcard.setPublicKey(public_key_sc);
 		
 		issueCommands.issueCard(smartcard);
+		
+		car = new Car();
+		car.setId((short)34);
+		RSAPublicKey public_key_ct = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_ct");
+		car.setPublicKey(public_key_ct);
+		byte[] date = new byte[3];
+		date[0] = 2;
+		date[1] = 11;
+		date[2] = 13;
+		car.setDate(date);
 	}
 
 	@Before
@@ -66,7 +78,7 @@ public class TerminalTest {
 	@Test
 	public void testKeys() throws Exception{
 		byte[] first_pubkey = smartcard.getPublicKey().getEncoded();
-		receptionCommands.initCard(smartcard);
+		receptionCommands.initCard(smartcard,car);
 		assertEquals("Check if smart card id matches", testSC_ID, smartcard.getScId());		
 		assertTrue("Check if pubkey matches", Arrays.equals(first_pubkey, smartcard.getPublicKey().getEncoded()));
 		
@@ -78,32 +90,32 @@ public class TerminalTest {
 	
 	@Test
 	public void testSetMileage() throws Exception{
-		receptionCommands.initCard(smartcard);
+		receptionCommands.initCard(smartcard,car);
 		int start_mileage = 500;
 		int final_mileage = 1000;
 		carCommands.setMileage(start_mileage);
-		carCommands.startCar(smartcard);
+		carCommands.startCar(car);
 		
 		carCommands.setMileage(final_mileage);
-		carCommands.stopCar();
+		carCommands.stopCar(car);
 		
-		receptionCommands.read(smartcard);
-		assertEquals("Start mileage", start_mileage, receptionCommands.start_mileage);
-		assertEquals("Final mileage", final_mileage, receptionCommands.final_mileage);
+		receptionCommands.read(smartcard,car);
+		assertEquals("Start mileage", start_mileage, car.getStartMileage());
+		assertEquals("Final mileage", final_mileage, car.getFinalMileage());
 		
 	}
 	
 	@Test(expected = CardException.class)
 	public void testReset() throws Exception{
-		receptionCommands.initCard(smartcard);
+		receptionCommands.initCard(smartcard,car);
 		receptionCommands.reset();
-		receptionCommands.initCard(smartcard);
+		receptionCommands.initCard(smartcard,car);
 		receptionCommands.getKeys(smartcard);
 	}
 	
 	@Test(expected = CardException.class)
 	public void testResetKeys() throws Exception{
-		receptionCommands.initCard(smartcard);
+		receptionCommands.initCard(smartcard,car);
 		receptionCommands.reset();
 		receptionCommands.getKeys(smartcard);
 	}
@@ -111,8 +123,8 @@ public class TerminalTest {
 	
 	@Test(expected = CardException.class)
 	public void testDoubleInit() throws Exception{
-		receptionCommands.initCard(smartcard);
-		receptionCommands.initCard(smartcard);
+		receptionCommands.initCard(smartcard,car);
+		receptionCommands.initCard(smartcard,car);
 	}
 
 }
