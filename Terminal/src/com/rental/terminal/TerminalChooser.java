@@ -54,6 +54,16 @@ public class TerminalChooser {
 		
 		public View() {
 			//
+			// General
+			//
+			Listener buttonListener = new Listener(){
+				@Override
+				public void handleEvent(Event e) {
+					addLogItem("Button '" + ((Button)e.widget).getText() + "' pressed");
+				}
+			};
+			
+			//
 			// Window
 			//
 			this.display = new Display();
@@ -106,48 +116,55 @@ public class TerminalChooser {
 			//
 			// Setup terminal tab
 			//
+			SashForm setupForm = new SashForm(folder, SWT.HORIZONTAL);
+			
 			this.setupTerminal = new TabItem(this.folder, SWT.NULL);
 			this.setupTerminal.setText("Setup Terminal");
-						
-		    SashForm setupForm = new SashForm(folder, SWT.HORIZONTAL);
-		    Button reset = new Button(setupForm, SWT.PUSH);
-		    reset.setText("Reset");
-		    Button init = new Button(setupForm, SWT.PUSH);
-		    init.setText("Init");
 			this.setupTerminal.setControl(setupForm);
+		    
+		    // Init button
+		    Button init = new Button(setupForm, SWT.PUSH);
+		    
+		    init.setText("Init");
+		    init.addListener(SWT.Selection, buttonListener);
+		    
 			
-			
-			Listener listener = new Listener(){
-				@Override
-				public void handleEvent(Event e) {
-					System.out.println();
-					addLogItem(((Button)e.widget).getText() + " pressed");
-					if(((Button)e.widget).getText() == "Reset"){
-						//iets 
-					}
-				}
-			};
-			init.addListener(SWT.Selection, listener);
-			reset.addListener(SWT.Selection, listener);
 			
 			//
 			// Desk terminal tab
 			//
+		    SashForm deskForm = new SashForm(this.folder, SWT.BORDER);
+		    
 			this.deskTerminal = new TabItem(this.folder, SWT.NULL);
 			this.deskTerminal.setText("Desk Terminal");
+			this.deskTerminal.setControl(deskForm);
 			
-			SashForm DeskForm = new SashForm(this.folder, SWT.BORDER);
-			Button ok = new Button(DeskForm, SWT.NULL);
-			ok.setText("OK");
-			this.deskTerminal.setControl(DeskForm);
-			
-			ok.addListener(SWT.Selection, listener);
+			// Reset button
+		    Button reset = new Button(deskForm, SWT.PUSH);
+		    
+		    reset.setText("Reset");
+		    reset.addListener(SWT.Selection, buttonListener);
 			
 			//
 			// Car terminal tab
 			//
+		    SashForm carForm = new SashForm(folder, SWT.HORIZONTAL);
+		    
 			this.carTerminal = new TabItem(this.folder, SWT.NULL);
 			this.carTerminal.setText("Car Terminal");
+			this.carTerminal.setControl(carForm);
+			
+			// Stop button
+			Button stop = new Button(carForm, SWT.None);
+			
+			stop.setText("Stop car");
+			stop.addListener(SWT.Selection, buttonListener);
+			
+			// Mileage label
+			Label mileage = new Label(carForm, SWT.None);
+			
+			mileage.setText("Current mileage: 0");
+			mileage.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 			
 			//
 			// Logging sidebar
@@ -206,7 +223,6 @@ public class TerminalChooser {
 		public void addLogItem(String message) {
 			this.log.add(message);
 		}
-		
 	}
 	
 	/**
@@ -222,8 +238,6 @@ public class TerminalChooser {
 		
 		this.view.setStatus("Not connected");
 		this.view.addLogItem("Application started");
-		
-		//this.view.shell.pack();
 		
 		// Start SWT GUI thread.
 		try {
