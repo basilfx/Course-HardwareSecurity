@@ -4,6 +4,10 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+/**
+ * @author Jelte & Erwin.
+ *
+ */
 public class JCUtil {
 	
 	/**

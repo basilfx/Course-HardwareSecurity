@@ -8,6 +8,10 @@ import java.security.interfaces.RSAPublicKey;
 
 import encryption.RSAHandler;
 
+/**
+ * @author Erwin
+ *
+ */
 public class Smartcard{
 	
 	private byte[] signature;

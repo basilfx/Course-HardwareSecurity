@@ -13,7 +13,7 @@ import javax.smartcardio.ResponseAPDU;
 /**
  * Issuing Terminal application.
  * 
- * @author Group 3.
+ * @author Jelte & Erwin.
  */
 public class IssuingCommandsHandler extends BaseCommandsHandler{
 

@@ -19,7 +19,7 @@ import encryption.RSAHandler;
 /**
  * Reception Terminal application.
  * 
- * @author	Group 3.
+ * @author	Jelte & Erwin.
  */
 public class ReceptionCommandsHandler extends BaseCommandsHandler {
 	

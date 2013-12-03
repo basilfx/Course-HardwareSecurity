@@ -13,6 +13,10 @@ import javax.smartcardio.ResponseAPDU;
 
 import encryption.RSAHandler;
 
+/**
+ * @author Jelte & Erwin.
+ *
+ */
 public class BaseCommandsHandler {
 	
 	/** Keys Bytes */

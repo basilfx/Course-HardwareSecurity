@@ -11,7 +11,7 @@ import encryption.RSAHandler;
 /**
  * An application that runs a demo of the car rental protocol.
  * 
- * @author	Group 3
+ * @author	Jelte
  */
 public class ProtocolDemo {
 	
