@@ -3,14 +3,20 @@ package terminal;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 
 import encryption.RSAHandler;
 
+/**
+ * @author Erwin
+ *
+ */
 public class Smartcard{
 	
 	private byte[] signature;
 	private RSAPublicKey public_key;
+	private RSAPrivateKey private_key;
 	private short sc_id;
 	
 	public void setSignature(byte[] signature) {
@@ -36,6 +42,12 @@ public class Smartcard{
 		byte[] data = JCUtil.mergeByteArrays(JCUtil.shortToBytes(sc_id), public_key.getEncoded());
 		RSAHandler rsaHandler = new RSAHandler();
 		return rsaHandler.verify(pubkey, data, signature);
+	}
+	public void setPrivateKey(RSAPrivateKey private_key) {
+		this.private_key = private_key;
+	}
+	public RSAPrivateKey getPrivateKey() {
+		return private_key;
 	}
 	
 }

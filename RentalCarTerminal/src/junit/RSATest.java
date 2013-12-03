@@ -79,17 +79,20 @@ public class RSATest {
 	@Test(expected = BadPaddingException.class)
 	public void testIncorrectEncryptionKey() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
 		byte[] data = rsaHandler.encrypt(public_key_sc, testData);
+		@SuppressWarnings("unused")
 		byte[] decrypted_data = rsaHandler.decrypt(private_key_rt, data);
 	}	
 	
 	@Test(expected = BadPaddingException.class)
 	public void testIncorrectDecryptionKey() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
 		byte[] data = rsaHandler.encrypt(public_key_rt, testData);
+		@SuppressWarnings("unused")
 		byte[] decrypted_data = rsaHandler.decrypt(public_key_rt, data);
 	}
 	
 	@Test(expected = IllegalBlockSizeException.class)
 	public void testDataToLong() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
+		@SuppressWarnings("unused")
 		byte[] data = rsaHandler.encrypt(public_key_rt, public_key_sc.getEncoded());
 	}
 	

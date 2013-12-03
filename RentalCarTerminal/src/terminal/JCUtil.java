@@ -4,6 +4,10 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+/**
+ * @author Jelte & Erwin.
+ *
+ */
 public class JCUtil {
 	
 	/**
@@ -95,13 +99,24 @@ public class JCUtil {
 		return result;
 	}
 	
-	protected String toHexString(byte[] in) {
+	public String toHexString(byte[] in) {
 		StringBuilder out = new StringBuilder(2 * in.length);
 		for (int i = 0; i < in.length; i++) {
 			out.append(String.format("%02x ", (in[i] & 0xFF)));
 		}
 
 		return out.toString().toUpperCase();
+	}
+	
+
+	/**
+	 * Writes <code>obj</code> to the log.
+	 * 
+	 * @param obj
+	 *            the message to write to the log.
+	 */
+	public static void log(Object obj) {
+		System.out.println(obj.toString());
 	}
 
 }
