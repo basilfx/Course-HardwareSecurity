@@ -56,12 +56,14 @@ public class Terminal {
 
 	/**
 	 * Constructs the terminal application.
+	 * @throws InterruptedException 
 	 */
-	public Terminal() {
+	public Terminal() throws InterruptedException {
 		
 		running = true;
 		
 		(new CardThread()).start();
+		Thread.sleep(2000);
 	}
 
 	class CardThread extends Thread {
