@@ -53,7 +53,9 @@ public class TerminalChooser {
 		private List log;
 		
 		public View() {
+			//
 			// Window
+			//
 			this.display = new Display();
 			this.shell = new Shell(this.display);
 			this.shell.setLayout(new FormLayout());
@@ -62,7 +64,9 @@ public class TerminalChooser {
 			this.shell.setSize(1024, 500);
 			this.shell.setText("Terminal Emulator");
 			
+			//
 			// Splitter
+			//
 			this.sash = new Sash(shell, SWT.VERTICAL);
 			
 			final int limit = 2; 
@@ -71,8 +75,8 @@ public class TerminalChooser {
 			sashData.left = new FormAttachment(percent, 0);
 			sashData.top = new FormAttachment(0, 0);
 			sashData.bottom = new FormAttachment(100, 0);
-			this.sash.setLayoutData (sashData);
-			this.sash.addListener (SWT.Selection, new Listener () {
+			this.sash.setLayoutData(sashData);
+			this.sash.addListener(SWT.Selection, new Listener () {
 				public void handleEvent (Event e) {
 					Rectangle sashRect = View.this.sash.getBounds ();
 					Rectangle shellRect = shell.getClientArea ();
@@ -87,7 +91,9 @@ public class TerminalChooser {
 				}
 			});
 			
+			//
 			// Initialize tab folder
+			//
 			this.folder = new TabFolder(this.shell, SWT.BORDER);
 			
 			FormData folderData = new FormData();
@@ -97,7 +103,9 @@ public class TerminalChooser {
 			folderData.bottom = new FormAttachment(100, 0);
 			this.folder.setLayoutData(folderData);
 			
+			//
 			// Setup terminal tab
+			//
 			this.setupTerminal = new TabItem(this.folder, SWT.NULL);
 			this.setupTerminal.setText("Setup Terminal");
 						
@@ -107,7 +115,6 @@ public class TerminalChooser {
 		    Button init = new Button(setupForm, SWT.PUSH);
 		    init.setText("Init");
 			this.setupTerminal.setControl(setupForm);
-			
 			
 			
 			Listener listener = new Listener(){
@@ -123,20 +130,28 @@ public class TerminalChooser {
 			init.addListener(SWT.Selection, listener);
 			reset.addListener(SWT.Selection, listener);
 			
+			//
 			// Desk terminal tab
+			//
 			this.deskTerminal = new TabItem(this.folder, SWT.NULL);
 			this.deskTerminal.setText("Desk Terminal");
 			
-			SashForm DeskForm= new SashForm(this.folder, SWT.BORDER);
+			SashForm DeskForm = new SashForm(this.folder, SWT.BORDER);
 			Button ok = new Button(DeskForm, SWT.NULL);
 			ok.setText("OK");
 			this.deskTerminal.setControl(DeskForm);
 			
 			ok.addListener(SWT.Selection, listener);
 			
+			//
 			// Car terminal tab
+			//
 			this.carTerminal = new TabItem(this.folder, SWT.NULL);
 			this.carTerminal.setText("Car Terminal");
+			
+			//
+			// Logging sidebar
+			//
 			
 			// Group
 			this.group = new Group(this.shell, SWT.NULL);
@@ -156,6 +171,13 @@ public class TerminalChooser {
 			// Log
 			this.log = new List(this.group, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL);
 			this.log.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+			
+			// Clear button
+			Button clear = new Button(this.group, SWT.None);
+			
+			
+			// Marker button
+			Button mark = new Button(this.group, SWT.None);
 		}
 		
 		public void setStatus(String status) {
