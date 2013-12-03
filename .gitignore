@@ -14,3 +14,6 @@
 Thumb.db
 .DS_Store
 ._*
+
+# Project related
+Terminal/database.db

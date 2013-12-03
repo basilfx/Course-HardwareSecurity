@@ -1,5 +1,6 @@
 package com.rental.terminal;
 
+import java.sql.SQLException;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
@@ -23,6 +24,10 @@ import org.eclipse.swt.widgets.Sash;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
+
+import com.google.common.collect.Lists;
+import com.rental.terminal.db.Manager;
+import com.rental.terminal.model.Car;
 
 public class TerminalChooser {
 	/**
@@ -48,6 +53,7 @@ public class TerminalChooser {
 		
 		private Button setupInit;
 		
+		private Combo deskCars;
 		private Button deskReset;
 		private Button deskAddCar;
 		private Button deskEditCar;
@@ -150,10 +156,8 @@ public class TerminalChooser {
 			carSelectGroup.setLayout(new GridLayout(4, false));
 			
 			// Car selector
-			Combo selectCar = new Combo(carSelectGroup, SWT.DROP_DOWN);
-			
-			selectCar.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-			selectCar.add("Test");
+			this.deskCars = new Combo(carSelectGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
+			this.deskCars.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 			
 			// Add/edit and delete buttons
 			this.deskAddCar = new Button(carSelectGroup, SWT.None);
@@ -258,11 +262,158 @@ public class TerminalChooser {
 	private View view;;
 	
 	/**
+	 * @var Reference to the Database manager
+	 */
+	private Manager manager;
+	
+	/**
+	 * 
+	 */
+	public void setupButtons() {
+		// Add button
+		this.view.deskAddCar.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event arg0) {
+				CarDialog dialog = new CarDialog(view.shell);
+				dialog.setCar(new Car());
+				
+				if (dialog.open() == 0) {
+					Car car = dialog.getCar();
+					int id;
+					
+					// Save to database
+					try {
+						id = TerminalChooser.this.manager.getCarDao().create(car);
+					} catch (SQLException e) {
+						e.printStackTrace();
+						return;
+					}
+					
+					// Update GUI
+					TerminalChooser.this.view.addLogItem("Added car with ID " + id);
+					
+					view.deskCars.add(car.getName());
+					((java.util.List<Integer>) view.deskCars.getData()).add(id);
+				}
+			}
+		});
+		
+		// Edit button
+		this.view.deskEditCar.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event arg0) {
+				java.util.List<Integer> carIds = (java.util.List<Integer>) view.deskCars.getData();
+				Car car;
+				
+				// Determine car ID
+				int index = view.deskCars.getSelectionIndex();
+				
+				if (index == -1) {
+					return;
+				}
+				
+				int id = carIds.get(index);
+				
+				// Find car
+				try {
+					car = manager.getCarDao().queryForId(id);
+				} catch (SQLException e) {
+					e.printStackTrace();
+					return;
+				}
+				
+				// Display dialog
+				CarDialog dialog = new CarDialog(view.shell);
+				dialog.setCar(car);
+				
+				if (dialog.open() == 0) {
+					car = dialog.getCar();
+					
+					try {
+						TerminalChooser.this.manager.getCarDao().update(car);						
+					} catch (SQLException e) {
+						e.printStackTrace();
+						return;
+					}
+					
+					// Update GUI
+					view.addLogItem("Edited car with ID " + car.getId());
+					view.deskCars.setItem(index, car.getName());
+				}
+			}
+		});
+		
+		// Delete button
+		this.view.deskDeleteCar.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event arg0) {
+				java.util.List<Integer> carIds = (java.util.List<Integer>) view.deskCars.getData();
+				
+				// Determine car ID
+				int index = view.deskCars.getSelectionIndex();
+				
+				if (index == -1) {
+					return;
+				}
+				
+				int id = carIds.get(index);
+				
+				// Find car
+				try {
+					manager.getCarDao().deleteById(id);
+				} catch (SQLException e) {
+					e.printStackTrace();
+					return;
+				}
+
+				// Update GUI
+				view.addLogItem("Deleted car with ID " + id);
+				view.deskCars.remove(index);
+			}
+		});
+	}
+	
+	public void setupCars() {
+		java.util.List<Car> cars;
+		
+		// Query for all
+		try {
+			cars = this.manager.getCarDao().queryForAll();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return;
+		}
+		
+		// Add to the list
+		java.util.List<Integer> carIds = Lists.newArrayList();
+		
+		for (Car car : cars) {
+			this.view.deskCars.add(car.getName());
+			carIds.add(car.getId());
+		}
+		
+		// Save IDs
+		this.view.deskCars.setData(carIds);
+	}
+	
+	/**
 	 * 
 	 */
 	public TerminalChooser() {
+		// Setup the Database
+		try {
+			this.manager = new Manager();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		// Setup the view
 		this.view = new View();
 		
+		this.setupButtons();
+		this.setupCars();
+		
+		// Notify ready
 		this.view.setStatus("Not connected");
 		this.view.addLogItem("Application started");
 		
