@@ -55,7 +55,7 @@ public class CarCommandsHandler extends BaseCommandsHandler{
 
 
 	/**
-	 * Starts the car.
+	 * Starts the car, and sets the start mileage on the smartcard.
 	 * @param car - Car object which represents the currently used car.
 	 * @require car.getPrivateKey() != null.
 	 * @require car.id != null.
@@ -91,7 +91,7 @@ public class CarCommandsHandler extends BaseCommandsHandler{
 	}
 
 	/**
-	 * Stops the car.
+	 * Stops the car, and sets the final 
 	 * @param car - Car object which represents the currently used car.
 	 * @require car.getPrivateKey() != null.
 	 * @throws CardException

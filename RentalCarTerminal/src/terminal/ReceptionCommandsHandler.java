@@ -119,11 +119,12 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_CAR_KEY_EXPONENT, (byte) 0, (byte) 0, car_public_key_exponent);
 			terminal.sendCommandAPDU(capdu);
 			
-			/*byte[] car_public_key = mergeByteArrays(car_public_key_modulus, car_public_key_exponent);
+			byte[] car_public_key = JCUtil.mergeByteArrays(car_public_key_modulus, car_public_key_exponent);
 			byte[] signature = rsaHandler.sign(private_key_rt, car_public_key);
 			capdu = new CommandAPDU(CLA_INIT, INIT_CHECK_CAR_KEY_SIGNATURE, (byte) 0, (byte) 0, signature);
-			rapdu = sendCommandAPDU(capdu);
-			data = rapdu.getData();*/
+			//rapdu = 
+			terminal.sendCommandAPDU(capdu);
+			//data = rapdu.getData();
 			
 
 			// RT->SC: {|car_id, date, sc_id, N0|}pubkey_ct			
@@ -140,6 +141,8 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 	 * @param currentSmartcard - The currently used smartcard.
 	 * @param car - The car which to read the mileage from.
 	 * 				Sets the start mileage and the final mileage of this car instance.
+	 * @ensure car.getStartMileage() == the start mileage on the physical smartcard
+	 * @ensure car.getFinalMileage() == the final mileage on the physical smartcard
 	 * @require car.getPublicKey != null.
 	 * 
 	 * @throws CardException
