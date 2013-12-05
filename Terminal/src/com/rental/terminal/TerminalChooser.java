@@ -1,18 +1,19 @@
 package com.rental.terminal;
 
+import java.sql.SQLException;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
@@ -23,6 +24,10 @@ import org.eclipse.swt.widgets.Sash;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
+
+import com.google.common.collect.Lists;
+import com.rental.terminal.db.Manager;
+import com.rental.terminal.model.Car;
 
 public class TerminalChooser {
 	/**
@@ -39,20 +44,34 @@ public class TerminalChooser {
 		private Display display;
 	    private Shell shell;
 		
-	    private Sash sash;
-	    
-		private TabFolder folder;
-		
 		private TabItem setupTerminal;
 		private TabItem deskTerminal;
 		private TabItem carTerminal;
 		
-		private Group group;
-		
 		private Label status;
 		private List log;
 		
+		private Button setupInit;
+		
+		private Combo deskCars;
+		private Button deskReset;
+		private Button deskAddCar;
+		private Button deskEditCar;
+		private Button deskDeleteCar;
+		
+		private Button carStartStop;
+		
 		public View() {
+			//
+			// General
+			//
+			Listener buttonListener = new Listener(){
+				@Override
+				public void handleEvent(Event e) {
+					addLogItem("Button '" + ((Button)e.widget).getText() + "' pressed");
+				}
+			};
+			
 			//
 			// Window
 			//
@@ -67,18 +86,20 @@ public class TerminalChooser {
 			//
 			// Splitter
 			//
-			this.sash = new Sash(shell, SWT.VERTICAL);
+			final Sash sash = new Sash(shell, SWT.VERTICAL);
 			
 			final int limit = 2; 
 			final int percent = 60;
+			
 			final FormData sashData = new FormData();
 			sashData.left = new FormAttachment(percent, 0);
 			sashData.top = new FormAttachment(0, 0);
 			sashData.bottom = new FormAttachment(100, 0);
-			this.sash.setLayoutData(sashData);
-			this.sash.addListener(SWT.Selection, new Listener () {
+			
+			sash.setLayoutData(sashData);
+			sash.addListener(SWT.Selection, new Listener () {
 				public void handleEvent (Event e) {
-					Rectangle sashRect = View.this.sash.getBounds ();
+					Rectangle sashRect = sash.getBounds ();
 					Rectangle shellRect = shell.getClientArea ();
 					
 					int right = shellRect.width - sashRect.width - limit;
@@ -94,90 +115,136 @@ public class TerminalChooser {
 			//
 			// Initialize tab folder
 			//
-			this.folder = new TabFolder(this.shell, SWT.BORDER);
+			TabFolder folder = new TabFolder(this.shell, SWT.BORDER);
 			
 			FormData folderData = new FormData();
 			folderData.left = new FormAttachment(0, 0);
-			folderData.right = new FormAttachment(this.sash, 0);
+			folderData.right = new FormAttachment(sash, 0);
 			folderData.top = new FormAttachment(0, 0);
 			folderData.bottom = new FormAttachment(100, 0);
-			this.folder.setLayoutData(folderData);
+			folder.setLayoutData(folderData);
 			
 			//
 			// Setup terminal tab
 			//
-			this.setupTerminal = new TabItem(this.folder, SWT.NULL);
+			SashForm setupForm = new SashForm(folder, SWT.HORIZONTAL);
+			
+			this.setupTerminal = new TabItem(folder, SWT.NULL);
 			this.setupTerminal.setText("Setup Terminal");
-						
-		    SashForm setupForm = new SashForm(folder, SWT.HORIZONTAL);
-		    Button reset = new Button(setupForm, SWT.PUSH);
-		    reset.setText("Reset");
-		    Button init = new Button(setupForm, SWT.PUSH);
-		    init.setText("Init");
 			this.setupTerminal.setControl(setupForm);
-			
-			
-			Listener listener = new Listener(){
-				@Override
-				public void handleEvent(Event e) {
-					System.out.println();
-					addLogItem(((Button)e.widget).getText() + " pressed");
-					if(((Button)e.widget).getText() == "Reset"){
-						//iets 
-					}
-				}
-			};
-			init.addListener(SWT.Selection, listener);
-			reset.addListener(SWT.Selection, listener);
+		    
+		    // Init button
+		    this.setupInit = new Button(setupForm, SWT.PUSH);
+		    
+		    this.setupInit.setText("Init");
+		    this.setupInit.addListener(SWT.Selection, buttonListener);
 			
 			//
 			// Desk terminal tab
 			//
-			this.deskTerminal = new TabItem(this.folder, SWT.NULL);
+		    SashForm deskForm = new SashForm(folder, SWT.BORDER);
+		    
+			this.deskTerminal = new TabItem(folder, SWT.NULL);
 			this.deskTerminal.setText("Desk Terminal");
+			this.deskTerminal.setControl(deskForm);
 			
-			SashForm DeskForm = new SashForm(this.folder, SWT.BORDER);
-			Button ok = new Button(DeskForm, SWT.NULL);
-			ok.setText("OK");
-			this.deskTerminal.setControl(DeskForm);
+			// Car selector row
+			RowLayout rowLayout = new RowLayout();
+			rowLayout.fill = true;
 			
-			ok.addListener(SWT.Selection, listener);
+			Group carSelectGroup = new Group(deskForm, SWT.NONE);
+			carSelectGroup.setLayout(new GridLayout(4, false));
+			
+			// Car selector
+			this.deskCars = new Combo(carSelectGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
+			this.deskCars.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+			
+			// Add/edit and delete buttons
+			this.deskAddCar = new Button(carSelectGroup, SWT.None);
+			this.deskAddCar.setText("Add");
+			
+			this.deskEditCar = new Button(carSelectGroup, SWT.None);
+			this.deskEditCar.setText("Edit");
+			
+			this.deskDeleteCar = new Button(carSelectGroup, SWT.None);
+			this.deskDeleteCar.setText("Delete");
+			
+			// Reset button
+		    this.deskReset = new Button(deskForm, SWT.None);
+		    
+		    this.deskReset.setText("Reset");
+		    this.deskReset.addListener(SWT.Selection, buttonListener);
 			
 			//
 			// Car terminal tab
 			//
-			this.carTerminal = new TabItem(this.folder, SWT.NULL);
+		    SashForm carForm = new SashForm(folder, SWT.HORIZONTAL);
+		    
+			this.carTerminal = new TabItem(folder, SWT.NULL);
 			this.carTerminal.setText("Car Terminal");
+			this.carTerminal.setControl(carForm);
+			
+			// Stop button
+			this.carStartStop = new Button(carForm, SWT.None);
+			
+			this.carStartStop.setText("Stop car");
+			this.carStartStop.addListener(SWT.Selection, buttonListener);
+			
+			// Mileage label
+			Label mileage = new Label(carForm, SWT.None);
+			
+			mileage.setText("Current mileage: 0");
+			mileage.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 			
 			//
 			// Logging sidebar
 			//
 			
 			// Group
-			this.group = new Group(this.shell, SWT.NULL);
-			this.group.setLayout(new GridLayout(1, false));
+			Group group = new Group(this.shell, SWT.NULL);
+			group.setLayout(new GridLayout(1, false));
 			
 			FormData groupData = new FormData();
-			groupData.left = new FormAttachment(this.sash, 0);
+			groupData.left = new FormAttachment(sash, 0);
 			groupData.right = new FormAttachment(100, 0);
 			groupData.top = new FormAttachment(0, 0);
 			groupData.bottom = new FormAttachment(100, 0);
-			this.group.setLayoutData(groupData);
+			
+			group.setLayoutData(groupData);
 			
 			// Status label
-			this.status = new Label(this.group, SWT.NULL);
+			this.status = new Label(group, SWT.NULL);
 			this.status.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 			
 			// Log
-			this.log = new List(this.group, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL);
+			this.log = new List(group, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL);
 			this.log.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 			
 			// Clear button
-			Button clear = new Button(this.group, SWT.None);
+			Button clear = new Button(group, SWT.None);
 			
+			clear.setText("Clear log");
+			clear.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+			
+			clear.addListener(SWT.Selection, new Listener() {
+				@Override
+				public void handleEvent(Event e) {
+					View.this.log.removeAll();
+				}
+			});
 			
 			// Marker button
-			Button mark = new Button(this.group, SWT.None);
+			Button mark = new Button(group, SWT.None);
+			
+			mark.setText("Add marker");
+			mark.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+			
+			mark.addListener(SWT.Selection, new Listener() {
+				@Override
+				public void handleEvent(Event e) {
+					View.this.addLogItem("===================================");
+				}
+			});
 		}
 		
 		public void setStatus(String status) {
@@ -187,7 +254,6 @@ public class TerminalChooser {
 		public void addLogItem(String message) {
 			this.log.add(message);
 		}
-		
 	}
 	
 	/**
@@ -196,15 +262,160 @@ public class TerminalChooser {
 	private View view;;
 	
 	/**
+	 * @var Reference to the Database manager
+	 */
+	private Manager manager;
+	
+	/**
+	 * 
+	 */
+	public void setupButtons() {
+		// Add button
+		this.view.deskAddCar.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event arg0) {
+				CarDialog dialog = new CarDialog(view.shell);
+				dialog.setCar(new Car());
+				
+				if (dialog.open() == 0) {
+					Car car = dialog.getCar();
+					int id;
+					
+					// Save to database
+					try {
+						id = TerminalChooser.this.manager.getCarDao().create(car);
+					} catch (SQLException e) {
+						e.printStackTrace();
+						return;
+					}
+					
+					// Update GUI
+					TerminalChooser.this.view.addLogItem("Added car with ID " + id);
+					
+					view.deskCars.add(car.getName());
+					((java.util.List<Integer>) view.deskCars.getData()).add(id);
+				}
+			}
+		});
+		
+		// Edit button
+		this.view.deskEditCar.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event arg0) {
+				java.util.List<Integer> carIds = (java.util.List<Integer>) view.deskCars.getData();
+				Car car;
+				
+				// Determine car ID
+				int index = view.deskCars.getSelectionIndex();
+				
+				if (index == -1) {
+					return;
+				}
+				
+				int id = carIds.get(index);
+				
+				// Find car
+				try {
+					car = manager.getCarDao().queryForId(id);
+				} catch (SQLException e) {
+					e.printStackTrace();
+					return;
+				}
+				
+				// Display dialog
+				CarDialog dialog = new CarDialog(view.shell);
+				dialog.setCar(car);
+				
+				if (dialog.open() == 0) {
+					car = dialog.getCar();
+					
+					try {
+						TerminalChooser.this.manager.getCarDao().update(car);						
+					} catch (SQLException e) {
+						e.printStackTrace();
+						return;
+					}
+					
+					// Update GUI
+					view.addLogItem("Edited car with ID " + car.getId());
+					view.deskCars.setItem(index, car.getName());
+				}
+			}
+		});
+		
+		// Delete button
+		this.view.deskDeleteCar.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event arg0) {
+				java.util.List<Integer> carIds = (java.util.List<Integer>) view.deskCars.getData();
+				
+				// Determine car ID
+				int index = view.deskCars.getSelectionIndex();
+				
+				if (index == -1) {
+					return;
+				}
+				
+				int id = carIds.get(index);
+				
+				// Find car
+				try {
+					manager.getCarDao().deleteById(id);
+				} catch (SQLException e) {
+					e.printStackTrace();
+					return;
+				}
+
+				// Update GUI
+				view.addLogItem("Deleted car with ID " + id);
+				view.deskCars.remove(index);
+			}
+		});
+	}
+	
+	public void setupCars() {
+		java.util.List<Car> cars;
+		
+		// Query for all
+		try {
+			cars = this.manager.getCarDao().queryForAll();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return;
+		}
+		
+		// Add to the list
+		java.util.List<Integer> carIds = Lists.newArrayList();
+		
+		for (Car car : cars) {
+			this.view.deskCars.add(car.getName());
+			carIds.add(car.getId());
+		}
+		
+		// Save IDs
+		this.view.deskCars.setData(carIds);
+	}
+	
+	/**
 	 * 
 	 */
 	public TerminalChooser() {
+		// Setup the Database
+		try {
+			this.manager = new Manager();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		// Setup the view
 		this.view = new View();
 		
+		this.setupButtons();
+		this.setupCars();
+		
+		// Notify ready
 		this.view.setStatus("Not connected");
 		this.view.addLogItem("Application started");
-		
-		//this.view.shell.pack();
 		
 		// Start SWT GUI thread.
 		try {
