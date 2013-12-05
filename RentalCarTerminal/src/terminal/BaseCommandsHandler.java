@@ -53,6 +53,9 @@ public class BaseCommandsHandler {
 	 * Obtains the keys, id and signature from the smartcard and verifies them.
 	 * @param currentSmartcard - A Smart Card instance. 
 	 * This method will set the public key, the smartcard id and the signature of this instance.
+	 * @ensure currentSmartcard.getPublickey() == public key present on physical smartcard
+	 * @ensure currentSmartcard.getId() == the id of the physical smartcard
+	 * @ensure currentSmartcard.getSignature == the signature present on the physical smartcard
 	 * @throws CardException
 	 * @throws NoSuchAlgorithmException
 	 * @throws InvalidKeySpecException

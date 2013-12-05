@@ -119,11 +119,12 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_CAR_KEY_EXPONENT, (byte) 0, (byte) 0, car_public_key_exponent);
 			terminal.sendCommandAPDU(capdu);
 			
-			/*byte[] car_public_key = mergeByteArrays(car_public_key_modulus, car_public_key_exponent);
+			byte[] car_public_key = JCUtil.mergeByteArrays(car_public_key_modulus, car_public_key_exponent);
 			byte[] signature = rsaHandler.sign(private_key_rt, car_public_key);
 			capdu = new CommandAPDU(CLA_INIT, INIT_CHECK_CAR_KEY_SIGNATURE, (byte) 0, (byte) 0, signature);
-			rapdu = sendCommandAPDU(capdu);
-			data = rapdu.getData();*/
+			//rapdu = 
+			terminal.sendCommandAPDU(capdu);
+			//data = rapdu.getData();
 			
 
 			// RT->SC: {|car_id, date, sc_id, N0|}pubkey_ct			
@@ -140,6 +141,8 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 	 * @param currentSmartcard - The currently used smartcard.
 	 * @param car - The car which to read the mileage from.
 	 * 				Sets the start mileage and the final mileage of this car instance.
+	 * @ensure car.getStartMileage() == the start mileage on the physical smartcard
+	 * @ensure car.getFinalMileage() == the final mileage on the physical smartcard
 	 * @require car.getPublicKey != null.
 	 * 
 	 * @throws CardException
@@ -154,6 +157,7 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			CommandAPDU capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_SIGNED_NONCE, (byte) 0, (byte) 0, data, NONCESIZE);
 			ResponseAPDU rapdu = terminal.sendCommandAPDU(capdu);
 			data = rapdu.getData();
+			
 
 			if (Arrays.equals(nonce, data)){
 				// were fine!
@@ -165,17 +169,19 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 				//exit();
 			}
 			
-			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_START_MILEAGE, (byte) 0, (byte) 0, NONCESIZE + MILEAGESIZE + BLOCKSIZE);
+			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_START_MILEAGE, (byte) 0, (byte) 0, BLOCKSIZE);
 			rapdu = terminal.sendCommandAPDU(capdu);
 			data = rapdu.getData();
 			int start_mileage = verifyAndReturnMileage(car, data);
 			car.setStartMileage(start_mileage);
+			JCUtil.log("start mileage: " + start_mileage);
 			
 			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_FINAL_MILEAGE, (byte) 0, (byte) 0, BLOCKSIZE);
 			rapdu = terminal.sendCommandAPDU(capdu);
 			data = rapdu.getData();
 			int final_mileage = verifyAndReturnMileage(car, data);
 			car.setFinalMileage(final_mileage);
+			JCUtil.log("final mileage: " + final_mileage);
 			
 		} catch (Exception e) {
 			throw new CardException(e.getMessage());
@@ -196,21 +202,10 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 	 * @throws BadPaddingException
 	 */
 	private int verifyAndReturnMileage(Car car, byte[] data) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
-		byte[] nonce = JCUtil.subArray(data, 0, NONCESIZE);
-		byte[] mileage = JCUtil.subArray(data, NONCESIZE, MILEAGESIZE);
-		byte[] encrypted_signed_mileage = JCUtil.subArray(data, NONCESIZE + MILEAGESIZE, BLOCKSIZE);
-		byte[] signed_mileage = rsaHandler.decrypt(private_key_rt, encrypted_signed_mileage);
-		// TODO: Ruud: moet hier niet gewoon de signature van worden geverified en afgestript
-		byte[] unsigned_mileage = rsaHandler.decrypt(car.getPublicKey(), signed_mileage);
-		byte[] nonce_mileage = JCUtil.subArray(unsigned_mileage, 0, NONCESIZE + MILEAGESIZE);
+		byte[] decrypted_data = rsaHandler.decrypt(car.getPublicKey(),data);
 		
-		// TODO: Ruud: Wat doet dit precies? De arrays gaan nooit hetzelfde zijn omdat je de gedecrypte en geunsignde versie vergelijkt met de geencrypte en gesignde versie
-		// TODO: Ruud: we kunnen de 'mileage' of '-1' returnen?		
-		if (Arrays.equals(JCUtil.mergeByteArrays(nonce, mileage), nonce_mileage)){
-			//store values
-		} else {
-			//exception
-		}
+		byte[] nonce = JCUtil.subArray(decrypted_data, 0, NONCESIZE);
+		byte[] mileage = JCUtil.subArray(decrypted_data, NONCESIZE, MILEAGESIZE);
 		return JCUtil.bytesToInt(mileage);
 	}
 

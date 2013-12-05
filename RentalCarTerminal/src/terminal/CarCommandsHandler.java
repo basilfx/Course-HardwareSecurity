@@ -49,13 +49,13 @@ public class CarCommandsHandler extends BaseCommandsHandler{
 	public CarCommandsHandler(Terminal terminal) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
 		super(terminal);
 	
-		mileage = 0;
+		mileage = 1000;
 	}
 
 
 
 	/**
-	 * Starts the car.
+	 * Starts the car, and sets the start mileage on the smartcard.
 	 * @param car - Car object which represents the currently used car.
 	 * @require car.getPrivateKey() != null.
 	 * @require car.id != null.
@@ -91,7 +91,7 @@ public class CarCommandsHandler extends BaseCommandsHandler{
 	}
 
 	/**
-	 * Stops the car.
+	 * Stops the car, and sets the final 
 	 * @param car - Car object which represents the currently used car.
 	 * @require car.getPrivateKey() != null.
 	 * @throws CardException
@@ -131,6 +131,7 @@ public class CarCommandsHandler extends BaseCommandsHandler{
 	 */
 	byte[] getEncryptedNonceAndMileage(Car car) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
 		randomizeNonce();
+		mileage += 500;
 		byte[] bytes_mileage = JCUtil.intToBytes(mileage);
 		//byte[] encrypted_mileage = rsaHandler.encrypt(public_key_rt, JCUtil.mergeByteArrays(bytes_nonce, bytes_mileage));
 		byte[] encrypted_mileage = rsaHandler.encrypt(car.getPrivateKey(), JCUtil.mergeByteArrays(nonce, bytes_mileage));

@@ -101,6 +101,13 @@ public class ProtocolDemo {
 			
 			carCommands.stopCar(car);
 			
+			System.out.println("-----------------");
+			System.out.println("INITIATING THE READ-PHASE");
+			System.out.println("-----------------");
+			Thread.sleep(1000);
+			
+			receptionCommands.read(smartcard, car);
+			
 			terminal.stopRunning();
 		}
 		catch (Exception e) {
