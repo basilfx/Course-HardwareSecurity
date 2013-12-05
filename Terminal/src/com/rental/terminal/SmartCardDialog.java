@@ -16,34 +16,38 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import com.google.common.base.Strings;
-import com.rental.terminal.model.Car;
+import com.rental.terminal.model.SmartCard;
 
-public class CarDialog extends Dialog {
+public class SmartCardDialog extends Dialog {
 	
 	private class View {
 		private Shell shell;
 		private Button ok;
 		private Button cancel;
 		
-		private Text name;
+		private Text cardId;
+		private Button read;
 		
 		private View(Shell parent) {
 			this.shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
 			
 			this.shell.setLayout(new GridLayout(1, false));
 	        this.shell.setSize(450, 300);
-	        this.shell.setText("Add car");
+	        this.shell.setText("Add smart card");
 	        	        
-	        // Name field
-	        Composite nameField = new Composite(this.shell, SWT.None);
-	        nameField.setLayout(new GridLayout(2, true));
-	        nameField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+	        // Card ID field
+	        Composite cardIdField = new Composite(this.shell, SWT.None);
+	        cardIdField.setLayout(new GridLayout(3, true));
+	        cardIdField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 	        
-	        Label nameLabel = new Label(nameField, SWT.None);
+	        Label nameLabel = new Label(cardIdField, SWT.None);
 	        nameLabel.setText("Name:");
 	        
-	        this.name = new Text(nameField, SWT.BORDER | SWT.SINGLE);
-	        this.name.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+	        this.cardId = new Text(cardIdField, SWT.SINGLE | SWT.BORDER); //| SWT.READ_ONLY);
+	        this.cardId.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+	        
+	        this.read = new Button(cardIdField, SWT.None);
+	        this.read.setText("Read ID");
 	        
 	        // OK/Cancel buttons
 	        Composite buttonField = new Composite(this.shell, SWT.RIGHT);
@@ -58,16 +62,16 @@ public class CarDialog extends Dialog {
 	}
 	
     private int result;
-    private Car car;
+    private SmartCard smartcard;
  
     private View view;
     
 
-    public CarDialog(Shell parent, int style) {
+    public SmartCardDialog(Shell parent, int style) {
         super(parent, style);
     }
 
-    public CarDialog(Shell parent) {
+    public SmartCardDialog(Shell parent) {
         this(parent, SWT.NONE);
     }
 
@@ -96,27 +100,27 @@ public class CarDialog extends Dialog {
     }
     
     public void close() {
-    	CarDialog.this.view.shell.close();
-    	CarDialog.this.view.shell.dispose();
+    	SmartCardDialog.this.view.shell.close();
+    	SmartCardDialog.this.view.shell.dispose();
     	
     }
     
     public void setupForm() {
-    	this.view.name.setText(Strings.nullToEmpty(this.car.getName()));
+    	this.view.cardId.setText(Strings.nullToEmpty(this.smartcard.getCardId()));
     }
     
     public void setupButtons() {
     	this.view.ok.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
-				CarDialog.this.result = 0;
+				SmartCardDialog.this.result = 0;
 				
-				String name = CarDialog.this.view.name.getText();
+				String cardId = SmartCardDialog.this.view.cardId.getText();
 				
-				if (name.isEmpty()) {
-					MessageBox message = new MessageBox(CarDialog.this.view.shell);
+				if (cardId.isEmpty()) {
+					MessageBox message = new MessageBox(SmartCardDialog.this.view.shell);
 					
-					message.setMessage("Name is missing");
+					message.setMessage("Card ID missing");
 					message.setText("Validation error");
 					
 					message.open();
@@ -125,29 +129,30 @@ public class CarDialog extends Dialog {
 					return;
 				}
 				
-				CarDialog.this.car.setName(name);
+				// Store data
+				SmartCardDialog.this.smartcard.setCardId(cardId);
 				
 				// Done
-				CarDialog.this.close();
+				SmartCardDialog.this.close();
 			}
 		});
     	
     	this.view.cancel.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
-				CarDialog.this.result = 1;
+				SmartCardDialog.this.result = 1;
 				
 				// Done
-				CarDialog.this.close();
+				SmartCardDialog.this.close();
 			}
 		});
     }
 
-	public Car getCar() {
-		return car;
+	public SmartCard getSmartCard() {
+		return smartcard;
 	}
 
-	public void setCar(Car car) {
-		this.car = car;
+	public void setSmartCard(SmartCard smartcard) {
+		this.smartcard = smartcard;
 	}
 }

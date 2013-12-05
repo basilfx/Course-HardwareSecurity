@@ -16,9 +16,9 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import com.google.common.base.Strings;
-import com.rental.terminal.model.Car;
+import com.rental.terminal.model.Customer;
 
-public class CarDialog extends Dialog {
+public class CustomerDialog extends Dialog {
 	
 	private class View {
 		private Shell shell;
@@ -32,7 +32,7 @@ public class CarDialog extends Dialog {
 			
 			this.shell.setLayout(new GridLayout(1, false));
 	        this.shell.setSize(450, 300);
-	        this.shell.setText("Add car");
+	        this.shell.setText("Add customer");
 	        	        
 	        // Name field
 	        Composite nameField = new Composite(this.shell, SWT.None);
@@ -58,16 +58,16 @@ public class CarDialog extends Dialog {
 	}
 	
     private int result;
-    private Car car;
+    private Customer customer;
  
     private View view;
     
 
-    public CarDialog(Shell parent, int style) {
+    public CustomerDialog(Shell parent, int style) {
         super(parent, style);
     }
 
-    public CarDialog(Shell parent) {
+    public CustomerDialog(Shell parent) {
         this(parent, SWT.NONE);
     }
 
@@ -96,27 +96,27 @@ public class CarDialog extends Dialog {
     }
     
     public void close() {
-    	CarDialog.this.view.shell.close();
-    	CarDialog.this.view.shell.dispose();
+    	CustomerDialog.this.view.shell.close();
+    	CustomerDialog.this.view.shell.dispose();
     	
     }
     
     public void setupForm() {
-    	this.view.name.setText(Strings.nullToEmpty(this.car.getName()));
+    	this.view.name.setText(Strings.nullToEmpty(this.customer.getName()));
     }
     
     public void setupButtons() {
     	this.view.ok.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
-				CarDialog.this.result = 0;
+				CustomerDialog.this.result = 0;
 				
-				String name = CarDialog.this.view.name.getText();
+				String name = CustomerDialog.this.view.name.getText();
 				
 				if (name.isEmpty()) {
-					MessageBox message = new MessageBox(CarDialog.this.view.shell);
+					MessageBox message = new MessageBox(CustomerDialog.this.view.shell);
 					
-					message.setMessage("Name is missing");
+					message.setMessage("Name or public key missing");
 					message.setText("Validation error");
 					
 					message.open();
@@ -125,29 +125,29 @@ public class CarDialog extends Dialog {
 					return;
 				}
 				
-				CarDialog.this.car.setName(name);
+				CustomerDialog.this.customer.setName(name);
 				
 				// Done
-				CarDialog.this.close();
+				CustomerDialog.this.close();
 			}
 		});
     	
     	this.view.cancel.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
-				CarDialog.this.result = 1;
+				CustomerDialog.this.result = 1;
 				
 				// Done
-				CarDialog.this.close();
+				CustomerDialog.this.close();
 			}
 		});
     }
 
-	public Car getCar() {
-		return car;
+	public Customer getCustomer() {
+		return customer;
 	}
 
-	public void setCar(Car car) {
-		this.car = car;
+	public void setCustomer(Customer customer) {
+		this.customer = customer;
 	}
 }

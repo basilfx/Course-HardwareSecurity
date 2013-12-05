@@ -5,11 +5,11 @@ import javax.swing.UIManager;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class TerminalApplication {
+public class Application {
 	/**
 	 * @var Logger instance
 	 */
-	private final static Logger LOGGER = Logger.getLogger(TerminalApplication.class.getName());
+	private final static Logger LOGGER = Logger.getLogger(Application.class.getName());
 	
 	/**
 	 * Main method
@@ -24,6 +24,6 @@ public class TerminalApplication {
         }
 
 		// Create terminal chooser
-		new TerminalChooser();
+		new Terminal();
 	}
 }
