@@ -423,16 +423,18 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	private void read(APDU apdu, byte ins) {
 
 		byte[] buf = apdu.getBuffer();
-		short lc = (short) (buf[OFFSET_LC] & 0x00FF);
-		readBuffer(apdu, tmp, (short) 0, lc);
+		
 
 		switch (ins) {
 		case READ_MILEAGE_SIGNED_NONCE:
+			short lc = (short) (buf[OFFSET_LC] & 0x00FF);
+			readBuffer(apdu, tmp, (short) 0, lc);
+			apdu.setOutgoing();
 			// decrypt nonce with private_key_sc and send it
 			cipher.init(privKeySC, Cipher.MODE_DECRYPT);
-			cipher.doFinal(buf, (short) 0, NONCESIZE, tmp, (short) 0);
-			apdu.setOutgoing();
-			Util.arrayCopy(tmp, (short) 0, buf, (short) 0, NONCESIZE);
+			cipher.doFinal(tmp, (short) 0, lc, buf, (short) 0);
+			
+			//Util.arrayCopy(tmp, (short) 0, buf, (short) 0, NONCESIZE);
 			apdu.setOutgoingLength((short) NONCESIZE);
 			apdu.sendBytes((short) 0, (short) NONCESIZE);
 			break;
@@ -492,7 +494,7 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 			// if start_mileage == 0, start_mileage = received_start_mileage
 			// Check whether car has been started before.
 			if (!has_been_started) {
-				Util.arrayCopy(buf, (short) 0, start_mileage, (short) 0,
+				Util.arrayCopy(tmp, (short) 0, start_mileage, (short) 0,
 						BLOCKSIZE);
 				has_been_started = true;
 			}
