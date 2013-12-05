@@ -4,6 +4,7 @@ package junit;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
 
@@ -47,6 +48,8 @@ public class TerminalTest {
 		smartcard.setScId(testSC_ID);			
 		RSAPublicKey public_key_sc = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_sc");
 		smartcard.setPublicKey(public_key_sc);
+		RSAPrivateKey private_key_sc = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_sc");
+		smartcard.setPrivateKey(private_key_sc);
 		
 		issueCommands.issueCard(smartcard);
 		
@@ -54,6 +57,8 @@ public class TerminalTest {
 		car.setId((short)34);
 		RSAPublicKey public_key_ct = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_ct");
 		car.setPublicKey(public_key_ct);
+		RSAPrivateKey private_key_ct = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_ct");
+		car.setPrivateKey(private_key_ct);
 		byte[] date = new byte[3];
 		date[0] = 2;
 		date[1] = 11;
