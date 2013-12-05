@@ -6,6 +6,8 @@ import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
@@ -171,7 +173,12 @@ public class Terminal {
 			this.setupDeleteSmartcard.setText("Delete");
 			
 			// Init button
-		    this.setupInit = new Button(setupForm, SWT.PUSH);
+			Group setupActionsGroup = new Group(setupForm, SWT.NONE);
+			setupActionsGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+			setupActionsGroup.setLayout(new GridLayout(4, false));
+			setupActionsGroup.setText("Actions");
+			
+		    this.setupInit = new Button(setupActionsGroup, SWT.PUSH);
 		    
 		    this.setupInit.setText("Init");
 		    this.setupInit.addListener(SWT.Selection, buttonListener);
@@ -226,13 +233,19 @@ public class Terminal {
 			this.deskDeleteCustomer.setText("Delete");
 			
 			//Rent out a car button
-			this.deskRent = new Button(deskForm, SWT.None);
+			Group deskActionsGroup = new Group(deskForm, SWT.NONE);
+			deskActionsGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+			deskActionsGroup.setLayout(new GridLayout(4, false));
+			deskActionsGroup.setText("Actions");
+			
+			this.deskRent = new Button(deskActionsGroup, SWT.None);
 		    
 		    this.deskRent.setText("Rent out car");
+		    this.deskRent.setEnabled(false);
 		    this.deskRent.addListener(SWT.Selection, buttonListener);
 			
 			// Reset button
-		    this.deskReset = new Button(deskForm, SWT.None);
+		    this.deskReset = new Button(deskActionsGroup, SWT.None);
 		    
 		    this.deskReset.setText("Reset card");
 		    this.deskReset.addListener(SWT.Selection, buttonListener);
@@ -240,24 +253,30 @@ public class Terminal {
 			//
 			// Car terminal tab
 			//
-		    SashForm carForm = new SashForm(folder, SWT.HORIZONTAL);
+		    Composite carForm = new Composite(folder, SWT.None);
+		    carForm.setLayout(new GridLayout(1, true));
 		    
 			this.carTerminal = new TabItem(folder, SWT.NULL);
 			this.carTerminal.setText("Car Terminal");
 			this.carTerminal.setControl(carForm);
 			
+			Group carActionsGroup = new Group(carForm, SWT.NONE);
+			carActionsGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+			carActionsGroup.setLayout(new GridLayout(1, false));
+			carActionsGroup.setText("Actions");
+			
 			// Car selector
-			this.carCars = new Combo(carForm, SWT.DROP_DOWN | SWT.READ_ONLY);
+			this.carCars = new Combo(carActionsGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
 			this.carCars.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 			
 			// Stop button
-			this.carStartStop = new Button(carForm, SWT.None);
+			this.carStartStop = new Button(carActionsGroup, SWT.None);
 			
 			this.carStartStop.setText("Stop car");
 			this.carStartStop.addListener(SWT.Selection, buttonListener);
 			
 			// Mileage label
-			Label mileage = new Label(carForm, SWT.None);
+			Label mileage = new Label(carActionsGroup, SWT.None);
 			
 			mileage.setText("Current mileage: 0");
 			mileage.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
@@ -336,6 +355,21 @@ public class Terminal {
 	 * 
 	 */
 	public void setupButtons() {
+		SelectionListener buttonEnabler = new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent arg0) {
+				view.deskRent.setEnabled(
+					view.deskCars.getSelectionIndex() != -1 && view.deskCustomers.getSelectionIndex() != -1
+				);
+			}
+			
+			@Override
+			public void widgetDefaultSelected(SelectionEvent arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+		};
+		
 		//
 		// Smart card
 		//
@@ -446,6 +480,8 @@ public class Terminal {
 		//
 		// Cars
 		//
+		this.view.deskCars.addSelectionListener(buttonEnabler);
+		this.view.deskCustomers.addSelectionListener(buttonEnabler);
 		
 		// Add car button
 		this.view.deskAddCar.addListener(SWT.Selection, new Listener() {
