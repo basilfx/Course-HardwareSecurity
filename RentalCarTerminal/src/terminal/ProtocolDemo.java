@@ -6,6 +6,8 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 
+import javax.smartcardio.CardException;
+
 import encryption.RSAHandler;
 
 /**
@@ -51,6 +53,7 @@ public class ProtocolDemo {
 		System.out.println("wait 2 seconds so that card can be selected.");
 		Thread.sleep(2000);
 		System.out.println("proceed...");
+	
 		
 		try {
 			System.out.println("-----------------");
@@ -68,6 +71,7 @@ public class ProtocolDemo {
 			
 			issuingCommands.issueCard(smartcard);
 			
+			for (int i = 0; i < 10; i++){
 			System.out.println("-----------------");
 			System.out.println("INITIATING THE INIT-PHASE");
 			System.out.println("-----------------");
@@ -92,6 +96,7 @@ public class ProtocolDemo {
 			System.out.println("-----------------");
 			Thread.sleep(1000);
 			
+			carCommands.setMileage(500);
 			carCommands.startCar(car);
 			
 			System.out.println("-----------------");
@@ -99,6 +104,7 @@ public class ProtocolDemo {
 			System.out.println("-----------------");
 			Thread.sleep(1000);
 			
+			carCommands.setMileage(1000);
 			carCommands.stopCar(car);
 			
 			System.out.println("-----------------");
@@ -108,6 +114,14 @@ public class ProtocolDemo {
 			
 			receptionCommands.read(smartcard, car);
 			
+			System.out.println("-----------------");
+			System.out.println("INITIATING THE RESET-PHASE");
+			System.out.println("-----------------");
+			Thread.sleep(1000);
+			receptionCommands.reset();
+			}
+			
+						
 			terminal.stopRunning();
 		}
 		catch (Exception e) {

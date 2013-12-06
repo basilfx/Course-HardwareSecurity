@@ -108,6 +108,22 @@ public class Terminal {
 			}
 		}
 	}
+	
+	public boolean isCardPresent(){		
+		TerminalFactory tf = TerminalFactory.getDefault();
+		CardTerminals ct = tf.terminals();
+		List<CardTerminal> cs;
+		try {
+			cs = ct.list(CardTerminals.State.CARD_PRESENT);
+			for (CardTerminal c : cs) {
+				if (c.isCardPresent()){
+					return true;
+				}
+			}
+		} catch (CardException e) {
+		}
+		return false;
+	}
 
 	
 

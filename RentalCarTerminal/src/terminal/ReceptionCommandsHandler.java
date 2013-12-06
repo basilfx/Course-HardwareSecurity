@@ -122,9 +122,7 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			byte[] car_public_key = JCUtil.mergeByteArrays(car_public_key_modulus, car_public_key_exponent);
 			byte[] signature = rsaHandler.sign(private_key_rt, car_public_key);
 			capdu = new CommandAPDU(CLA_INIT, INIT_CHECK_CAR_KEY_SIGNATURE, (byte) 0, (byte) 0, signature);
-			//rapdu = 
 			terminal.sendCommandAPDU(capdu);
-			//data = rapdu.getData();
 			
 
 			// RT->SC: {|car_id, date, sc_id, N0|}pubkey_ct			
