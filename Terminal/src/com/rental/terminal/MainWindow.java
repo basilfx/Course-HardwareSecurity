@@ -1,11 +1,15 @@
 package com.rental.terminal;
 
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Rectangle;
@@ -28,14 +32,22 @@ import org.eclipse.swt.widgets.Sash;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
+import org.eclipse.swt.widgets.Text;
 
+import terminal.BaseCommandsHandler;
+import terminal.CarCommandsHandler;
+import terminal.IssuingCommandsHandler;
+import terminal.ReceptionCommandsHandler;
+import terminal.Smartcard;
 import terminal.Terminal;
 
 import com.google.common.collect.Lists;
 import com.rental.terminal.db.Manager;
-import com.rental.terminal.model.Car;
-import com.rental.terminal.model.Customer;
-import com.rental.terminal.model.SmartCard;
+import com.rental.terminal.model.CarDB;
+import com.rental.terminal.model.CustomerDB;
+import com.rental.terminal.model.SmartCardDB;
+
+import encryption.RSAHandler;
 
 public class MainWindow {
 	/**
@@ -59,26 +71,31 @@ public class MainWindow {
 		private Label status;
 		private List log;
 		
-		private Button setupInit;
+		private Button setupIssue;
 		private Combo setupSmartcard;
 		private Button setupAddSmartcard;
 		private Button setupEditSmartcard;
 		private Button setupDeleteSmartcard;
 		
-		private Button deskRent;
+		
+		private Button deskInit;
 		private Button deskReset;
 		private Combo deskCars;
 		private Button deskAddCar;
 		private Button deskEditCar;
 		private Button deskDeleteCar;
+		private Text deskDate;
 		
 		private Combo deskCustomers;
 		private Button deskAddCustomer;
 		private Button deskEditCustomer;
 		private Button deskDeleteCustomer;
 		
-		private Button carStartStop;
+		private Button carStart;
+		private Button carStop;
+		private Button carDrive;
 		private Combo carCars;
+		private Label carMileage;
 		
 		public View() {
 			//
@@ -180,10 +197,10 @@ public class MainWindow {
 			setupActionsGroup.setLayout(new GridLayout(4, false));
 			setupActionsGroup.setText("Actions");
 			
-		    this.setupInit = new Button(setupActionsGroup, SWT.PUSH);
+		    this.setupIssue = new Button(setupActionsGroup, SWT.PUSH);
 		    
-		    this.setupInit.setText("Init");
-		    this.setupInit.addListener(SWT.Selection, buttonListener);
+		    this.setupIssue.setText("Issue card");
+		    this.setupIssue.addListener(SWT.Selection, buttonListener);
 			
 			//
 			// Desk terminal tab
@@ -234,17 +251,30 @@ public class MainWindow {
 			this.deskDeleteCustomer = new Button(customerSelectGroup, SWT.None);
 			this.deskDeleteCustomer.setText("Delete");
 			
-			//Rent out a car button
+			// Date selector
+			Group deskPeriodGroup = new Group(deskForm, SWT.NONE);
+			deskPeriodGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+			deskPeriodGroup.setLayout(new GridLayout(4, false));
+			deskPeriodGroup.setText("Select period");
+			
+			this.deskDate = new Text(deskPeriodGroup, SWT.BORDER);
+			
+			Calendar c = Calendar.getInstance(); 
+			c.setTime(new Date()); 
+			c.add(Calendar.DATE, 7);
+			this.deskDate.setText(new SimpleDateFormat("yyyy-MM-dd").format(c.getTime()));
+			
+			// Actions
 			Group deskActionsGroup = new Group(deskForm, SWT.NONE);
 			deskActionsGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 			deskActionsGroup.setLayout(new GridLayout(4, false));
 			deskActionsGroup.setText("Actions");
 			
-			this.deskRent = new Button(deskActionsGroup, SWT.None);
+			// Init button
+		    this.deskInit = new Button(deskActionsGroup, SWT.None);
 		    
-		    this.deskRent.setText("Rent out car");
-		    this.deskRent.setEnabled(false);
-		    this.deskRent.addListener(SWT.Selection, buttonListener);
+		    this.deskInit.setText("Init card");
+		    this.deskInit.addListener(SWT.Selection, buttonListener);
 			
 			// Reset button
 		    this.deskReset = new Button(deskActionsGroup, SWT.None);
@@ -272,16 +302,28 @@ public class MainWindow {
 			this.carCars.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 			
 			// Stop button
-			this.carStartStop = new Button(carActionsGroup, SWT.None);
+			this.carStart = new Button(carActionsGroup, SWT.None);
 			
-			this.carStartStop.setText("Stop car");
-			this.carStartStop.addListener(SWT.Selection, buttonListener);
+			this.carStart.setText("Start car");
+			this.carStart.addListener(SWT.Selection, buttonListener);
+			
+			// Stop button
+			this.carStop = new Button(carActionsGroup, SWT.None);
+			
+			this.carStop.setText("Stop car");
+			this.carStop.addListener(SWT.Selection, buttonListener);
+			
+			// Stop button
+			this.carDrive = new Button(carActionsGroup, SWT.None);
+			
+			this.carDrive.setText("Drive 10KM");
+			this.carDrive.addListener(SWT.Selection, buttonListener);
 			
 			// Mileage label
-			Label mileage = new Label(carActionsGroup, SWT.None);
+			this.carMileage = new Label(carActionsGroup, SWT.None);
 			
-			mileage.setText("Current mileage: 0");
-			mileage.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+			this.carMileage.setText("Current mileage: 0");
+			this.carMileage.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 			
 			//
 			// Logging sidebar
@@ -365,7 +407,7 @@ public class MainWindow {
 		SelectionListener buttonEnabler = new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent arg0) {
-				view.deskRent.setEnabled(
+				view.deskInit.setEnabled(
 					view.deskCars.getSelectionIndex() != -1 && view.deskCustomers.getSelectionIndex() != -1
 				);
 			}
@@ -386,11 +428,10 @@ public class MainWindow {
 			@Override
 			public void handleEvent(Event arg0) {
 				SmartCardDialog dialog = new SmartCardDialog(view.shell);
-				dialog.setSmartCard(new SmartCard());
-				dialog.setTerminal(MainWindow.this.terminal);
+				dialog.setSmartCard(new SmartCardDB());
 				
 				if (dialog.open() == 0) {
-					SmartCard smartCard = dialog.getSmartCard();
+					SmartCardDB smartCard = dialog.getSmartCard();
 					
 					// Save to database
 					try {
@@ -414,7 +455,7 @@ public class MainWindow {
 			@Override
 			public void handleEvent(Event arg0) {
 				java.util.List<Integer> smartCardIds = (java.util.List<Integer>) view.setupSmartcard.getData();
-				SmartCard smartCard;
+				SmartCardDB smartCard;
 				
 				// Determine car ID
 				int index = view.setupSmartcard.getSelectionIndex();
@@ -496,10 +537,10 @@ public class MainWindow {
 			@Override
 			public void handleEvent(Event arg0) {
 				CarDialog dialog = new CarDialog(view.shell);
-				dialog.setCar(new Car());
+				dialog.setCar(new CarDB());
 				
 				if (dialog.open() == 0) {
-					Car car = dialog.getCar();
+					CarDB car = dialog.getCar();
 					
 					// Save to database
 					try {
@@ -524,7 +565,7 @@ public class MainWindow {
 			@Override
 			public void handleEvent(Event arg0) {
 				java.util.List<Integer> carIds = (java.util.List<Integer>) view.deskCars.getData();
-				Car car;
+				CarDB car;
 				
 				// Determine car ID
 				int index = view.deskCars.getSelectionIndex();
@@ -606,10 +647,10 @@ public class MainWindow {
 			@Override
 			public void handleEvent(Event arg0) {
 				CustomerDialog dialog = new CustomerDialog(view.shell);
-				dialog.setCustomer(new Customer());
+				dialog.setCustomer(new CustomerDB());
 				
 				if (dialog.open() == 0) {
-					Customer customer = dialog.getCustomer();
+					CustomerDB customer = dialog.getCustomer();
 					
 					// Save to database
 					try {
@@ -633,7 +674,7 @@ public class MainWindow {
 			@Override
 			public void handleEvent(Event arg0) {
 				java.util.List<Integer> customerIds = (java.util.List<Integer>) view.deskCustomers.getData();
-				Customer customer;
+				CustomerDB customer;
 				
 				// Determine car ID
 				int index = view.deskCustomers.getSelectionIndex();
@@ -703,10 +744,215 @@ public class MainWindow {
 				view.deskCustomers.remove(index);
 			}
 		});
+		
+		// Issue button
+		this.view.setupIssue.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event arg0) {
+				// Generate unique ID
+				java.util.List<Integer> smartCardIds = (java.util.List<Integer>) view.setupSmartcard.getData();
+				SmartCardDB smartCard;
+				
+				// Determine car ID
+				int index = view.setupSmartcard.getSelectionIndex();
+				
+				if (index == -1) {
+					return;
+				}
+				
+				int id = smartCardIds.get(index);
+				
+				view.setupIssue.setEnabled(false);
+				
+				// Find car
+				try {
+					smartCard = manager.getSmartCardDao().queryForId(id);				
+				
+					// Smart card magic
+					RSAHandler rsaHandler = new RSAHandler();
+					Smartcard smartcard = new Smartcard();
+					
+				
+					RSAPublicKey public_key_sc = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_sc");
+					RSAPrivateKey private_key_sc = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_sc");
+					
+					smartcard.setScId(smartCard.getCardId());			
+					smartcard.setPublicKey(public_key_sc);
+					smartcard.setPrivateKey(private_key_sc);
+					
+					IssuingCommandsHandler issuingCommands;
+					
+					issuingCommands = new IssuingCommandsHandler(terminal);
+					issuingCommands.issueCard(smartcard);
+					
+					// Update GUI
+					view.addLogItem("Card issueing complete");
+				} catch (Exception e) {
+					view.addLogItem("Card issueing failed");
+					e.printStackTrace();
+				} finally {
+					view.setupIssue.setEnabled(true);
+				}
+				
+			}
+		});
+		
+		// Init button
+		this.view.deskInit.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event arg0) {
+				// Disable button
+				view.deskInit.setEnabled(false);
+				
+				// Retrieve card
+				java.util.List<Integer> carIds = (java.util.List<Integer>) view.deskCars.getData();
+				
+				CarDB car;
+				SmartCardDB smartCard;
+				Calendar calendar;
+				Smartcard smartCard2 = new Smartcard();
+				
+				// Parse data
+				try {
+					SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+			        calendar = Calendar.getInstance();
+			        calendar.setTime(formatter.parse(view.deskDate.getText()));
+				} catch (Exception e) {
+					view.deskInit.setEnabled(true);
+					return;
+				}
+				
+				// Read smart card ID
+				try {
+					new BaseCommandsHandler(terminal).getKeys(smartCard2);	
+					
+					// Determine car ID
+					int index = view.deskCars.getSelectionIndex();
+					
+					if (index == -1) {
+						return;
+					}
+					
+					int id = carIds.get(index);
+					
+					// Find car
+					car = manager.getCarDao().queryForId(id);
+					smartCard = manager.getSmartCardDao().queryForEq("cardId", smartCard2.getScId()).get(0);
+					
+					// Update car
+					car.setDate(calendar);
+					
+					// Invoke init command
+					ReceptionCommandsHandler reception = new ReceptionCommandsHandler(terminal);
+					reception.initCard(smartCard2, car.toCar());
+					
+					view.addLogItem("Card initialized");
+				} catch (Exception e) {
+					view.addLogItem("Failed initializing card");
+					
+					LOGGER.log(Level.SEVERE, "Exception", e);
+					return;
+				} finally {
+					// Re enable button
+					view.deskInit.setEnabled(true);
+				}
+			}
+		});
+		
+		// Car start button
+		view.carStart.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event arg0) {
+				view.carStart.setEnabled(false);
+				
+				try {
+					CarCommandsHandler carCommands = new CarCommandsHandler(terminal);
+					CarDB car = getCar(view.carCars.getSelectionIndex());
+					
+					if (car != null) {
+						carCommands.startCar(car.toCar());
+					}
+				} catch (Exception e) {
+					view.addLogItem("Failed starting car");
+					
+					LOGGER.log(Level.SEVERE, "Exception", e);
+					return;
+				}
+				
+				view.carStart.setEnabled(true);
+			}
+		});
+		
+		// Car stop button
+		view.carStop.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event arg0) {
+				view.carStop.setEnabled(false);
+				
+				try {
+					CarCommandsHandler carCommands = new CarCommandsHandler(terminal);
+					CarDB car = getCar(view.carCars.getSelectionIndex());
+					
+					if (car != null) {
+						carCommands.stopCar(car.toCar());
+					}
+				} catch (Exception e) {
+					view.addLogItem("Failed stopping car");
+					
+					LOGGER.log(Level.SEVERE, "Exception", e);
+					return;
+				}
+				
+				view.carStop.setEnabled(true);
+			}
+		});
+		
+		// Car drive button
+		view.carDrive.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event arg0) {
+				view.carDrive.setEnabled(false);
+				
+				try {
+					CarCommandsHandler carCommands = new CarCommandsHandler(terminal);
+					CarDB car = getCar(view.carCars.getSelectionIndex());
+					
+					if (car != null) {
+						carCommands.setMileage(carCommands.getMileage() + 10);
+						view.carMileage.setText("Current mileage: " + carCommands.getMileage());
+					}
+				} catch (Exception e) {
+					view.addLogItem("Failed increasing mileage");
+					
+					LOGGER.log(Level.SEVERE, "Exception", e);
+					return;
+				}
+				
+				view.carDrive.setEnabled(true);
+			}
+		});
+	}
+	
+	public CarDB getCar(int index) {
+		java.util.List<Integer> carIds = (java.util.List<Integer>) view.deskCars.getData();
+
+		if (index == -1) {
+			return null;
+		}
+		
+		int id = carIds.get(index);
+		
+		// Find car
+		try {
+			return manager.getCarDao().queryForId(id);
+		} catch (SQLException e) {
+			LOGGER.log(Level.SEVERE, "Exception", e);
+			return null;
+		}
 	}
 	
 	public void setupSmartCards() {
-		java.util.List<SmartCard> smartCards;
+		java.util.List<SmartCardDB> smartCards;
 		
 		// Query for all
 		try {
@@ -719,7 +965,7 @@ public class MainWindow {
 		// Add to the list
 		java.util.List<Integer> smartCardIds = Lists.newArrayList();
 		
-		for (SmartCard smartCard : smartCards) {
+		for (SmartCardDB smartCard : smartCards) {
 			this.view.setupSmartcard.add(smartCard.getCardId() + "");
 			//this.view.carCars.add(car.getName());
 			smartCardIds.add(smartCard.getId());
@@ -730,7 +976,7 @@ public class MainWindow {
 	}
 	
 	public void setupCustomers() {
-		java.util.List<Customer> customers;
+		java.util.List<CustomerDB> customers;
 		
 		// Query for all
 		try {
@@ -743,7 +989,7 @@ public class MainWindow {
 		// Add to the list
 		java.util.List<Integer> customerIds = Lists.newArrayList();
 		
-		for (Customer customer : customers) {
+		for (CustomerDB customer : customers) {
 			this.view.deskCustomers.add(customer.getName());
 			//this.view.carCars.add(car.getName());
 			customerIds.add(customer.getId());
@@ -754,7 +1000,7 @@ public class MainWindow {
 	}
 	
 	public void setupCars() {
-		java.util.List<Car> cars;
+		java.util.List<CarDB> cars;
 		
 		// Query for all
 		try {
@@ -767,7 +1013,7 @@ public class MainWindow {
 		// Add to the list
 		java.util.List<Integer> carIds = Lists.newArrayList();
 		
-		for (Car car : cars) {
+		for (CarDB car : cars) {
 			this.view.deskCars.add(car.getName());
 			this.view.carCars.add(car.getName());
 			carIds.add(car.getId());
@@ -792,6 +1038,7 @@ public class MainWindow {
 		// Setup terminal
 		try {
 			this.terminal = new Terminal();
+			Thread.sleep(2000);
 		} catch (InterruptedException e) {
 			LOGGER.log(Level.SEVERE, "Exception", e);
 			return;
@@ -808,6 +1055,20 @@ public class MainWindow {
 		// Notify ready
 		this.view.setStatus("Not connected");
 		this.view.addLogItem("Application started");
+		
+		// Add timer for smart card status polling
+		this.view.display.timerExec(500, new Runnable() {
+			@Override
+			public void run() {
+				if (MainWindow.this.terminal.isCardPresent()) {
+					MainWindow.this.view.setStatus("Connected");
+				} else {
+					MainWindow.this.view.setStatus("Not connected");
+				}
+				
+				view.display.timerExec(500, this);
+			}
+		});
 		
 		// Start SWT GUI thread.
 		try {

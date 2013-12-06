@@ -6,43 +6,43 @@ import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import com.j256.ormlite.table.TableUtils;
-import com.rental.terminal.model.Car;
-import com.rental.terminal.model.Customer;
-import com.rental.terminal.model.SmartCard;
+import com.rental.terminal.model.CarDB;
+import com.rental.terminal.model.CustomerDB;
+import com.rental.terminal.model.SmartCardDB;
 
 public class Manager {
 	private final static String DATABASE_URL = "jdbc:sqlite:database.db";
 	
 	private JdbcConnectionSource connection;
 	
-	private Dao<Car, Integer> carDao;
-	private Dao<SmartCard, Integer> smartCardDao;
-	private Dao<Customer, Integer> customerDao;
+	private Dao<CarDB, Integer> carDao;
+	private Dao<SmartCardDB, Integer> smartCardDao;
+	private Dao<CustomerDB, Integer> customerDao;
 
 	public Manager() throws SQLException {
 		connection = new JdbcConnectionSource(DATABASE_URL);
 
 		// Setup DAO
-		this.carDao = DaoManager.createDao(connection, Car.class);
-		this.smartCardDao = DaoManager.createDao(connection, SmartCard.class);
-		this.customerDao = DaoManager.createDao(connection, Customer.class);
+		this.carDao = DaoManager.createDao(connection, CarDB.class);
+		this.smartCardDao = DaoManager.createDao(connection, SmartCardDB.class);
+		this.customerDao = DaoManager.createDao(connection, CustomerDB.class);
 		
 
         // Setup the table
-        TableUtils.createTableIfNotExists(this.connection, Car.class);
-        TableUtils.createTableIfNotExists(this.connection, SmartCard.class);
-        TableUtils.createTableIfNotExists(this.connection, Customer.class);
+        TableUtils.createTableIfNotExists(this.connection, CarDB.class);
+        TableUtils.createTableIfNotExists(this.connection, SmartCardDB.class);
+        TableUtils.createTableIfNotExists(this.connection, CustomerDB.class);
 	}
 	
-	public Dao<Car, Integer> getCarDao() {
+	public Dao<CarDB, Integer> getCarDao() {
 		return this.carDao;
 	}
 	
-	public Dao<SmartCard, Integer> getSmartCardDao() {
+	public Dao<SmartCardDB, Integer> getSmartCardDao() {
 		return this.smartCardDao;
 	}
 	
-	public Dao<Customer, Integer> getCustomerDao() {
+	public Dao<CustomerDB, Integer> getCustomerDao() {
 		return this.customerDao;
 	}
 }

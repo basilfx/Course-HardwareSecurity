@@ -3,6 +3,8 @@ package terminal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Calendar;
+import java.util.Date;
 
 /**
  * @author Jelte & Erwin.
@@ -119,4 +121,20 @@ public class JCUtil {
 		System.out.println(obj.toString());
 	}
 
+	/**
+	 * Convert a Calendar instance to a byte array, as expected by the protocol.
+	 * The format is DAY, MONTH and YEAR.
+	 * 
+	 * @param date
+	 * @return Date byte array
+	 */
+	public static byte[] dateToBytes(Calendar date) {
+		byte[] result = new byte[3];
+		
+		result[0] = (byte) date.get(Calendar.DAY_OF_MONTH);
+		result[1] = (byte) date.get(Calendar.MONTH);
+		result[2] = (byte) (date.get(Calendar.YEAR) - 2000);
+		
+		return result;
+	}
 }

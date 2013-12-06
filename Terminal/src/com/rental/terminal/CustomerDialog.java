@@ -16,7 +16,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import com.google.common.base.Strings;
-import com.rental.terminal.model.Customer;
+import com.rental.terminal.model.CustomerDB;
 
 public class CustomerDialog extends Dialog {
 	
@@ -58,7 +58,7 @@ public class CustomerDialog extends Dialog {
 	}
 	
     private int result;
-    private Customer customer;
+    private CustomerDB customer;
  
     private View view;
     
@@ -143,11 +143,11 @@ public class CustomerDialog extends Dialog {
 		});
     }
 
-	public Customer getCustomer() {
+	public CustomerDB getCustomer() {
 		return customer;
 	}
 
-	public void setCustomer(Customer customer) {
+	public void setCustomer(CustomerDB customer) {
 		this.customer = customer;
 	}
 }

@@ -4,7 +4,7 @@ import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
 @DatabaseTable(tableName = "customers")
-public class Customer {
+public class CustomerDB {
 
 	@DatabaseField(generatedId = true)
 	private int id;

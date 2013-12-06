@@ -5,7 +5,7 @@ import com.j256.ormlite.field.ForeignCollectionField;
 import com.j256.ormlite.table.DatabaseTable;
 
 @DatabaseTable(tableName = "smartcards")
-public class SmartCard {
+public class SmartCardDB {
 
 	@DatabaseField(generatedId = true)
 	private int id;
@@ -17,10 +17,10 @@ public class SmartCard {
 	private String publicKey;
 	
 	@DatabaseField(canBeNull = true, foreign = true)
-	private Car car;
+	private CarDB car;
 	
 	@DatabaseField(canBeNull = true, foreign = true)
-	private Customer customer;
+	private CustomerDB customer;
 
 	//Getters and Setters
 	public String getPublicKey() {
@@ -39,19 +39,19 @@ public class SmartCard {
 		this.publicKey = publicKey;
 	}
 
-	public Car getCar() {
+	public CarDB getCar() {
 		return car;
 	}
 
-	public void setCar(Car car) {
+	public void setCar(CarDB car) {
 		this.car = car;
 	}
 
-	public Customer getCustomer() {
+	public CustomerDB getCustomer() {
 		return customer;
 	}
 
-	public void setCustomer(Customer customer) {
+	public void setCustomer(CustomerDB customer) {
 		this.customer = customer;
 	}
 	

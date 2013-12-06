@@ -16,7 +16,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import com.google.common.base.Strings;
-import com.rental.terminal.model.Car;
+import com.rental.terminal.model.CarDB;
 
 public class CarDialog extends Dialog {
 	
@@ -58,7 +58,7 @@ public class CarDialog extends Dialog {
 	}
 	
     private int result;
-    private Car car;
+    private CarDB car;
  
     private View view;
     
@@ -126,6 +126,8 @@ public class CarDialog extends Dialog {
 				}
 				
 				CarDialog.this.car.setName(name);
+				CarDialog.this.car.setPublicKey("keys/public_key_ct");
+				CarDialog.this.car.setPrivateKey("keys/private_key_ct");
 				
 				// Done
 				CarDialog.this.close();
@@ -143,11 +145,11 @@ public class CarDialog extends Dialog {
 		});
     }
 
-	public Car getCar() {
+	public CarDB getCar() {
 		return car;
 	}
 
-	public void setCar(Car car) {
+	public void setCar(CarDB car) {
 		this.car = car;
 	}
 }
