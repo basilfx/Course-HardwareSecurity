@@ -138,7 +138,7 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	}
 
 	public RentalCarApplet() {
-		tmp = JCSystem.makeTransientByteArray((short) 512,
+		tmp = JCSystem.makeTransientByteArray((short) 300,
 				JCSystem.CLEAR_ON_RESET);
 		cipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1, false);
 
