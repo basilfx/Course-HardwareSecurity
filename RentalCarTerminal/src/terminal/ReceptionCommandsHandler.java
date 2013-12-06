@@ -32,6 +32,7 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 	private static final byte INIT_SET_CAR_KEY_EXPONENT = (byte) 0x05;
 	private static final byte INIT_CHECK_CAR_KEY_SIGNATURE = (byte) 0x06;
 	private static final byte INIT_SET_SIGNED_ENCRYPTED_CAR_DATA = (byte) 0x07;
+	private static final byte INIT_CHECK_MEM_AVAILABLE = (byte) 0x08;
 
 	/** Read Bytes */
 	private static final byte CLA_READ = (byte) 0xB3;
@@ -80,11 +81,11 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			randomizeNonce();
 				
 				
-			// TODO: Ruud: die nonce (N1) hier is niet encrypted met de pubkey van de SC, dat moet wel volgens onze	specs
 			// RT -> SC: {|N1|}pubkey_sc
 			// SC -> RT: N1
-			// [RT: if N1 = N1 then SC is authenticated]				
-			CommandAPDU capdu = new CommandAPDU(CLA_INIT, INIT_START, (byte) 0, (byte) 0, nonce, NONCESIZE);
+			// [RT: if N1 = N1 then SC is authenticated]
+			byte[] encrypted_nonce = rsaHandler.encrypt(currentSmartcard.getPublicKey(), nonce);
+			CommandAPDU capdu = new CommandAPDU(CLA_INIT, INIT_START, (byte) 0, (byte) 0, encrypted_nonce, NONCESIZE);
 			ResponseAPDU rapdu = terminal.sendCommandAPDU(capdu);
 			byte[] data = rapdu.getData();
 			if (Arrays.equals(nonce, data)) {
@@ -100,7 +101,7 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			// RT -> N2			
 			capdu = new CommandAPDU(CLA_INIT, INIT_AUTHENTICATED, (byte) 0, (byte) 0, BLOCKSIZE);
 			rapdu = terminal.sendCommandAPDU(capdu);
-			byte[] encrypted_nonce = rapdu.getData();
+			encrypted_nonce = rapdu.getData();
 			byte[] decrypted_nonce = rsaHandler.decrypt(private_key_rt, encrypted_nonce);
 			
 			capdu = new CommandAPDU(CLA_INIT, INIT_SECOND_NONCE, (byte) 0, (byte) 0, decrypted_nonce);
@@ -128,6 +129,14 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			// RT->SC: {|car_id, date, sc_id, N0|}pubkey_ct			
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_SIGNED_ENCRYPTED_CAR_DATA, (byte) 0, (byte) 0, getEncryptedCarData(car));
 			terminal.sendCommandAPDU(capdu);
+			
+			// Check available memory.
+			capdu = new CommandAPDU(CLA_INIT, INIT_CHECK_MEM_AVAILABLE, (byte) 0, (byte) 0, (short) 2);
+			rapdu = terminal.sendCommandAPDU(capdu);
+			byte[] mem_available_array = rapdu.getData();
+			short mem_available = JCUtil.bytesToShort(mem_available_array[0], mem_available_array[1]);
+			
+			System.out.println("Memory available (persistent): " + mem_available);
 			
 		} catch (Exception e) {
 			throw new CardException(e.getMessage());
