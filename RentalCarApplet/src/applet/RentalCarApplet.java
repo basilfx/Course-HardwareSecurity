@@ -93,6 +93,9 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	
 	short temp_short_1;
 	short temp_short_2;
+	
+	// Temporary terminal authentication flag in RAM.
+	byte[] terminal_authenticated;
 
 	// The applet state (INIT or ISSUED).
 	byte state;
@@ -133,7 +136,7 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	private boolean started;
 
 	// Boolean which indicates whether the car has been started atleast once
-	private boolean has_been_started;
+	private boolean has_been_started_before;
 
 	// The RandomData instance.
 	private RandomData random;
@@ -146,7 +149,10 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	}
 
 	public RentalCarApplet() {
-		tmp = new byte[300];//JCSystem.makeTransientByteArray((short) 300, JCSystem.CLEAR_ON_RESET);
+		tmp = JCSystem.makeTransientByteArray((short) 300, JCSystem.CLEAR_ON_RESET);
+		
+		terminal_authenticated = JCSystem.makeTransientByteArray((short) 1, JCSystem.CLEAR_ON_RESET);
+		
 		temp_short_1 = (short) 0;
 		temp_short_2 = (short) 0;
 		cipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1, false);
@@ -180,7 +186,7 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		random = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
 
 		started = false;
-		has_been_started = false;
+		has_been_started_before = false;
 		
 		// First make an array to fill the memory, because JCSystem.getAvailableMemory is used later to check the available
 		// memory and this method has the following property:
@@ -207,9 +213,6 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 			break;
 		case STATE_ISSUED:
 			switch (cla) {
-			case CLA_ISSUE:
-				issue(apdu, ins);
-				break;
 			case CLA_INIT:
 				init(apdu, ins);
 				break;
@@ -377,6 +380,9 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 					ISOException.throwIt(SW_DATA_INVALID);
 				}
 			}
+			
+			terminal_authenticated[0] = 0x01;
+			
 			break;
 		case INIT_SET_CAR_KEY_MODULUS:
 
@@ -429,16 +435,19 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 			break;
 
 		case INIT_SET_SIGNED_ENCRYPTED_CAR_DATA:
-			// decrypt the car data and store it
-			Util.arrayCopy(buf, (short) 0, car_data, (short) 0, BLOCKSIZE);
+			// Make sure that the terminal has been authenticated.
+			if (terminal_authenticated[0] == 0x01) {
+				// Store the car data.
+				Util.arrayCopy(buf, (short) 0, car_data, (short) 0, BLOCKSIZE);
+			}
 			break;
-			
 		case INIT_CHECK_MEM_AVAILABLE:
 			// Check available persistent memory.
 			short mem_available = JCSystem.getAvailableMemory(JCSystem.MEMORY_TYPE_PERSISTENT);
 			buf[0] = (byte) ((mem_available >> 8) & 0xff);
 			buf[1] = (byte) (mem_available & 0xff);
 			apdu.setOutgoingAndSend((short) 0, (short) 2);
+			break;
 		default:
 			ISOException.throwIt(SW_INS_NOT_SUPPORTED);
 		}
@@ -492,7 +501,7 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 			// public_key_ct = 0
 			// car_data = 0
 			started = false;
-			has_been_started = false;
+			has_been_started_before = false;
 			//final_mileage = new byte[128];
 			//start_mileage = new byte[128];
 			pubKeyCT.clearKey();
@@ -517,10 +526,10 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 			started = true;
 			// if start_mileage == 0, start_mileage = received_start_mileage
 			// Check whether car has been started before.
-			if (!has_been_started) {
+			if (!has_been_started_before) {
 				Util.arrayCopy(tmp, (short) 0, start_mileage, (short) 0,
 						BLOCKSIZE);
-				has_been_started = true;
+				has_been_started_before = true;
 			}
 
 			cipher.init(pubKeyCT, Cipher.MODE_DECRYPT);
@@ -552,7 +561,6 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		}
 	}
 
-	// TODO: nonce wordt niet gechecked atm, moet dus nog gebeuren
 	private void stop(APDU apdu, byte ins) {
 
 		byte[] buf = apdu.getBuffer();
@@ -572,14 +580,11 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 
 			break;
 		case FINAL_MILEAGE_SIGNATURE:
-
-
+			
 			Util.arrayCopy(nonce, (short) 0, tmp, BLOCKSIZE, NONCESIZE);
 			
-
 			lc = (short) (buf[OFFSET_LC] & 0x00FF);
 			readBuffer(apdu, tmp, (short) (BLOCKSIZE + NONCESIZE), lc);
-
 			
 			signature_instance.init(pubKeyCT, Signature.MODE_VERIFY);
 			boolean verified = signature_instance.verify(tmp,
@@ -587,9 +592,10 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 					BLOCKSIZE);
 
 			if (verified) {
-				started = false;
 				Util.arrayCopy(tmp, (short)0,
 						final_mileage, (short) 0, BLOCKSIZE);
+				
+				started = false;
 			} else {
 				ISOException.throwIt(SIGNATURE_FAILURE);
 			}

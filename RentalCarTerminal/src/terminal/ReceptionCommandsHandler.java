@@ -131,7 +131,7 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			terminal.sendCommandAPDU(capdu);
 			
 			// Check available memory.
-			capdu = new CommandAPDU(CLA_INIT, INIT_CHECK_MEM_AVAILABLE, (byte) 0, (byte) 0, (byte) 2);
+			capdu = new CommandAPDU(CLA_INIT, INIT_CHECK_MEM_AVAILABLE, (byte) 0, (byte) 0, (short) 2);
 			rapdu = terminal.sendCommandAPDU(capdu);
 			byte[] mem_available_array = rapdu.getData();
 			short mem_available = JCUtil.bytesToShort(mem_available_array[0], mem_available_array[1]);
