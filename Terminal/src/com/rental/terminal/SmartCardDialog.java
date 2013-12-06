@@ -1,5 +1,12 @@
 package com.rental.terminal;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.util.Random;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -15,10 +22,17 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+import terminal.IssuingCommandsHandler;
+import terminal.Smartcard;
+import terminal.Terminal;
+
 import com.google.common.base.Strings;
 import com.rental.terminal.model.SmartCard;
 
+import encryption.RSAHandler;
+
 public class SmartCardDialog extends Dialog {
+	private Terminal terminal;
 	
 	private class View {
 		private Shell shell;
@@ -26,8 +40,8 @@ public class SmartCardDialog extends Dialog {
 		private Button cancel;
 		
 		private Text cardId;
-		private Button read;
-		
+		private Button issue;
+
 		private View(Shell parent) {
 			this.shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
 			
@@ -46,8 +60,8 @@ public class SmartCardDialog extends Dialog {
 	        this.cardId = new Text(cardIdField, SWT.SINGLE | SWT.BORDER); //| SWT.READ_ONLY);
 	        this.cardId.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 	        
-	        this.read = new Button(cardIdField, SWT.None);
-	        this.read.setText("Read ID");
+	        this.issue = new Button(cardIdField, SWT.None);
+	        this.issue.setText("Issue new card");
 	        
 	        // OK/Cancel buttons
 	        Composite buttonField = new Composite(this.shell, SWT.RIGHT);
@@ -106,10 +120,46 @@ public class SmartCardDialog extends Dialog {
     }
     
     public void setupForm() {
-    	this.view.cardId.setText(Strings.nullToEmpty(this.smartcard.getCardId()));
+    	this.view.cardId.setText(this.smartcard.getCardId() + "");
     }
     
     public void setupButtons() {
+    	this.view.issue.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event arg0) {
+				RSAHandler rsaHandler = new RSAHandler();
+				Smartcard smartcard = new Smartcard();
+				
+				RSAPublicKey public_key_sc;
+				RSAPrivateKey private_key_sc;
+				
+				try {
+					public_key_sc = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_sc");
+					private_key_sc = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_sc");
+				} catch (Exception e) {
+					e.printStackTrace();
+					return;
+				}
+				
+				short cardId = (short) new Random().nextInt(Short.MAX_VALUE + 1);
+				SmartCardDialog.this.smartcard.setCardId(cardId);
+				
+				smartcard.setScId(cardId);			
+				smartcard.setPublicKey(public_key_sc);
+				smartcard.setPrivateKey(private_key_sc);
+				
+				IssuingCommandsHandler issuingCommands;
+				
+				try {
+					issuingCommands = new IssuingCommandsHandler(terminal);
+					issuingCommands.issueCard(smartcard);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+    	});
+    	
     	this.view.ok.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
@@ -128,9 +178,6 @@ public class SmartCardDialog extends Dialog {
 					// Stop here
 					return;
 				}
-				
-				// Store data
-				SmartCardDialog.this.smartcard.setCardId(cardId);
 				
 				// Done
 				SmartCardDialog.this.close();
@@ -154,5 +201,13 @@ public class SmartCardDialog extends Dialog {
 
 	public void setSmartCard(SmartCard smartcard) {
 		this.smartcard = smartcard;
+	}
+	
+	public Terminal getTerminal() {
+		return this.terminal;
+	}
+	
+	public void setTerminal(Terminal terminal) {
+		this.terminal = terminal;
 	}
 }

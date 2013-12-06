@@ -11,7 +11,7 @@ public class SmartCard {
 	private int id;
 
 	@DatabaseField(canBeNull = false, unique = true)
-	private String cardId;
+	private Short cardId;
 
 	@DatabaseField(canBeNull = true)
 	private String publicKey;
@@ -55,11 +55,11 @@ public class SmartCard {
 		this.customer = customer;
 	}
 	
-	public String getCardId() {
+	public Short getCardId() {
 		return cardId;
 	}
 
-	public void setCardId(String cardId) {
+	public void setCardId(Short cardId) {
 		this.cardId = cardId;
 	}
 }

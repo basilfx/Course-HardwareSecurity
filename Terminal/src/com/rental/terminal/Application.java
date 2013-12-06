@@ -23,7 +23,7 @@ public class Application {
         	LOGGER.log(Level.WARNING, "Error setting native UI", e);
         }
 
-		// Create terminal chooser
-		new Terminal();
+		// Open the main window
+		new MainWindow();
 	}
 }

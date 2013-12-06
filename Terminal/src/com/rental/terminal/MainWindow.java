@@ -29,13 +29,15 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 
+import terminal.Terminal;
+
 import com.google.common.collect.Lists;
 import com.rental.terminal.db.Manager;
 import com.rental.terminal.model.Car;
 import com.rental.terminal.model.Customer;
 import com.rental.terminal.model.SmartCard;
 
-public class Terminal {
+public class MainWindow {
 	/**
 	 * @var Logger instance
 	 */
@@ -352,6 +354,11 @@ public class Terminal {
 	private Manager manager;
 	
 	/**
+	 * @var Reference to the Java Card terminal manager
+	 */
+	private Terminal terminal;
+	
+	/**
 	 * 
 	 */
 	public void setupButtons() {
@@ -380,22 +387,23 @@ public class Terminal {
 			public void handleEvent(Event arg0) {
 				SmartCardDialog dialog = new SmartCardDialog(view.shell);
 				dialog.setSmartCard(new SmartCard());
+				dialog.setTerminal(MainWindow.this.terminal);
 				
 				if (dialog.open() == 0) {
 					SmartCard smartCard = dialog.getSmartCard();
 					
 					// Save to database
 					try {
-						Terminal.this.manager.getSmartCardDao().create(smartCard);
+						MainWindow.this.manager.getSmartCardDao().create(smartCard);
 					} catch (SQLException e) {
 						e.printStackTrace();
 						return;
 					}
 					
 					// Update GUI
-					Terminal.this.view.addLogItem("Added smart card with ID " + smartCard.getId());
+					MainWindow.this.view.addLogItem("Added smart card with ID " + smartCard.getId());
 					
-					view.setupSmartcard.add(smartCard.getCardId());
+					view.setupSmartcard.add(smartCard.getCardId() + "");
 					((java.util.List<Integer>) view.setupSmartcard.getData()).add(smartCard.getId());
 				}
 			}
@@ -433,7 +441,7 @@ public class Terminal {
 					smartCard = dialog.getSmartCard();
 					
 					try {
-						Terminal.this.manager.getSmartCardDao().update(smartCard);						
+						MainWindow.this.manager.getSmartCardDao().update(smartCard);						
 					} catch (SQLException e) {
 						LOGGER.log(Level.SEVERE, "Exception", e);
 						return;
@@ -441,7 +449,7 @@ public class Terminal {
 					
 					// Update GUI
 					view.addLogItem("Edited smart card with ID " + smartCard.getId());
-					view.setupSmartcard.setItem(index, smartCard.getCardId());
+					view.setupSmartcard.setItem(index, smartCard.getCardId() + "");
 				}
 			}
 		});
@@ -495,14 +503,14 @@ public class Terminal {
 					
 					// Save to database
 					try {
-						Terminal.this.manager.getCarDao().create(car);
+						MainWindow.this.manager.getCarDao().create(car);
 					} catch (SQLException e) {
 						LOGGER.log(Level.SEVERE, "Exception", e);
 						return;
 					}
 					
 					// Update GUI
-					Terminal.this.view.addLogItem("Added car with ID " + car.getId());
+					MainWindow.this.view.addLogItem("Added car with ID " + car.getId());
 					
 					view.deskCars.add(car.getName());
 					view.carCars.add(car.getName());
@@ -543,7 +551,7 @@ public class Terminal {
 					car = dialog.getCar();
 					
 					try {
-						Terminal.this.manager.getCarDao().update(car);						
+						MainWindow.this.manager.getCarDao().update(car);						
 					} catch (SQLException e) {
 						LOGGER.log(Level.SEVERE, "Exception", e);
 						return;
@@ -605,14 +613,14 @@ public class Terminal {
 					
 					// Save to database
 					try {
-						Terminal.this.manager.getCustomerDao().create(customer);
+						MainWindow.this.manager.getCustomerDao().create(customer);
 					} catch (SQLException e) {
 						LOGGER.log(Level.SEVERE, "Exception", e);
 						return;
 					}
 					
 					// Update GUI
-					Terminal.this.view.addLogItem("Added customer with ID " + customer.getId());
+					MainWindow.this.view.addLogItem("Added customer with ID " + customer.getId());
 					
 					view.deskCustomers.add(customer.getName());
 					((java.util.List<Integer>) view.deskCustomers.getData()).add(customer.getId());
@@ -652,7 +660,7 @@ public class Terminal {
 					customer = dialog.getCustomer();
 					
 					try {
-						Terminal.this.manager.getCustomerDao().update(customer);						
+						MainWindow.this.manager.getCustomerDao().update(customer);						
 					} catch (SQLException e) {
 						LOGGER.log(Level.SEVERE, "Exception", e);
 						return;
@@ -772,11 +780,19 @@ public class Terminal {
 	/**
 	 * 
 	 */
-	public Terminal() {
+	public MainWindow() {
 		// Setup the Database
 		try {
 			this.manager = new Manager();
 		} catch (SQLException e) {
+			LOGGER.log(Level.SEVERE, "Exception", e);
+			return;
+		}
+		
+		// Setup terminal
+		try {
+			this.terminal = new Terminal();
+		} catch (InterruptedException e) {
 			LOGGER.log(Level.SEVERE, "Exception", e);
 			return;
 		}
