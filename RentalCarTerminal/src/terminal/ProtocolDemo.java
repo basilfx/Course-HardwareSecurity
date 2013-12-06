@@ -71,7 +71,9 @@ public class ProtocolDemo {
 			
 			issuingCommands.issueCard(smartcard);
 			
-			for (int i = 0; i < 10; i++){
+			for (int i = 0; i < 20; i++){
+				
+			System.out.println("========= " + i + " ============" );
 			System.out.println("-----------------");
 			System.out.println("INITIATING THE INIT-PHASE");
 			System.out.println("-----------------");

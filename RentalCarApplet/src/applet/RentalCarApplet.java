@@ -7,11 +7,9 @@ import javacard.framework.APDU;
 import javacard.framework.Applet;
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
-import javacard.framework.JCSystem;
 import javacard.framework.SystemException;
 import javacard.framework.Util;
 import javacard.security.KeyBuilder;
-import javacard.security.PrivateKey;
 import javacard.security.RSAPrivateKey;
 import javacard.security.RSAPublicKey;
 import javacard.security.RandomData;
@@ -90,6 +88,9 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 
 	// Temporary buffer in RAM.
 	byte[] tmp;
+	
+	short temp_short_1;
+	short temp_short_2;
 
 	// The applet state (INIT or ISSUED).
 	byte state;
@@ -99,6 +100,9 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 
 	// Cipher for encryption and decryption.
 	Cipher cipher;
+	
+	// Signature instance for signing and verifying
+	Signature signature_instance;
 
 	// privkey_sc.
 	RSAPrivateKey privKeySC;
@@ -131,6 +135,8 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 
 	// The RandomData instance.
 	private RandomData random;
+	
+
 
 	public static void install(byte[] bArray, short bOffset, byte bLength)
 			throws SystemException {
@@ -138,9 +144,11 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	}
 
 	public RentalCarApplet() {
-		tmp = JCSystem.makeTransientByteArray((short) 300,
-				JCSystem.CLEAR_ON_RESET);
+		tmp = new byte[300];//JCSystem.makeTransientByteArray((short) 300, JCSystem.CLEAR_ON_RESET);
+		temp_short_1 = (short) 0;
+		temp_short_2 = (short) 0;
 		cipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1, false);
+		signature_instance = Signature.getInstance(Signature.ALG_RSA_SHA_PKCS1, false);
 
 		// Create instances of keys.
 		privKeySC = (RSAPrivateKey) KeyBuilder.buildKey(
@@ -174,6 +182,8 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 
 		// Register this applet instance with the JCRE.
 		register();
+		
+	
 	}
 
 	public void process(APDU apdu) {
@@ -239,14 +249,14 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	 */
 	private void readBuffer(APDU apdu, byte[] dest, short offset, short length) {
 		byte[] buf = apdu.getBuffer();
-		short readCount = apdu.setIncomingAndReceive();
-		short i = 0;
-		Util.arrayCopy(buf, OFFSET_CDATA, dest, offset, readCount);
-		while ((short) (i + readCount) < length) {
-			i += readCount;
-			offset += readCount;
-			readCount = (short) apdu.receiveBytes(OFFSET_CDATA);
-			Util.arrayCopy(buf, OFFSET_CDATA, dest, offset, readCount);
+		temp_short_1 = apdu.setIncomingAndReceive();
+		temp_short_2 = 0;
+		Util.arrayCopy(buf, OFFSET_CDATA, dest, offset, temp_short_1);
+		while ((short) (temp_short_2 + temp_short_1) < length) {
+			temp_short_2 += temp_short_1;
+			offset += temp_short_1;
+			temp_short_1 = (short) apdu.receiveBytes(OFFSET_CDATA);
+			Util.arrayCopy(buf, OFFSET_CDATA, dest, offset, temp_short_1);
 		}
 	}
 
@@ -334,12 +344,11 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 
 			short lc = (short) (buf[OFFSET_LC] & 0x00FF);
 			readBuffer(apdu, tmp, (short) 0, lc);
-
-			byte[] returnValue = new byte[NONCESIZE];
-			Util.arrayCopy(tmp, (short) 0, returnValue, (short) 0, lc);
 			apdu.setOutgoing();
-			Util.arrayCopy(returnValue, (short) 0, buf, (short) 0, NONCESIZE);
-			apdu.setOutgoingLength(lc);
+			cipher.init(privKeySC, Cipher.MODE_DECRYPT);
+			cipher.doFinal(tmp, (short) 0, BLOCKSIZE, buf, (short) 0);
+
+			apdu.setOutgoingLength(NONCESIZE);
 			apdu.sendBytes((short) 0, NONCESIZE);
 			break;
 		case INIT_AUTHENTICATED:
@@ -359,7 +368,7 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 
 			for (byte i = 0; i < NONCESIZE; i++) {
 				if (tmp[i] != nonce[i]) {
-					ISOException.throwIt(NONCE_FAILURE);
+					ISOException.throwIt(SW_DATA_INVALID);
 				}
 			}
 			break;
@@ -378,6 +387,7 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		case INIT_SET_CAR_KEY_EXPONENT:
 
 			lc = (short) (buf[OFFSET_LC] & 0x00FF);
+			//Mileage length
 			short modulus_length = Util.getShort(tmp, (short) 0);
 			readBuffer(apdu, tmp, (short) (4 + modulus_length), lc);			
 			Util.setShort(tmp, (short) 2, lc);
@@ -390,16 +400,17 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		case INIT_CHECK_CAR_KEY_SIGNATURE:
 
 			lc = (short) (buf[OFFSET_LC] & 0x00FF);			
-
+			
+			//Mileage length
 			modulus_length = Util.getShort(tmp, (short) 0);
-			short exponent_length = Util.getShort(tmp, (short) 2); // Check signature
+			//Exponent length
+			short exponent_length = Util.getShort(tmp, (short) 2);
 			
 			//store the signature after the modulus and exponennt
 			readBuffer(apdu, tmp, (short) (4 + modulus_length + exponent_length), lc);
 			
-			Signature instance = Signature.getInstance(Signature.ALG_RSA_SHA_PKCS1, false);
-			instance.init(pubKeyRT, Signature.MODE_VERIFY);
-			boolean verified = instance.verify(tmp, (short) 4,
+			signature_instance.init(pubKeyRT, Signature.MODE_VERIFY);
+			boolean verified = signature_instance.verify(tmp, (short) 4,
 					(short) (modulus_length + exponent_length), tmp, (short) (4 + modulus_length + exponent_length),
 					lc);
 			if (verified) {
@@ -469,10 +480,10 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 			// car_data = 0
 			started = false;
 			has_been_started = false;
-			final_mileage = new byte[128];
-			start_mileage = new byte[128];
+			//final_mileage = new byte[128];
+			//start_mileage = new byte[128];
 			pubKeyCT.clearKey();
-			car_data = new byte[128];
+			//car_data = new byte[128];
 			break;
 		default:
 			ISOException.throwIt(SW_INS_NOT_SUPPORTED);
@@ -516,10 +527,8 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 		// the tmp is used here.
 		case GET_CAR_DATA_SIGNATURE:
 
-			Signature instance = Signature.getInstance(
-					Signature.ALG_RSA_SHA_PKCS1, false);
-			instance.init(privKeySC, Signature.MODE_SIGN);
-			instance.sign(tmp, (short) 0, (short) (NONCESIZE + BLOCKSIZE), buf,
+			signature_instance.init(privKeySC, Signature.MODE_SIGN);
+			signature_instance.sign(tmp, (short) 0, (short) (NONCESIZE + BLOCKSIZE), buf,
 					(short) 0);
 
 			apdu.setOutgoingAndSend((short) 0, (short) BLOCKSIZE);
@@ -551,26 +560,22 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 			break;
 		case FINAL_MILEAGE_SIGNATURE:
 
-			byte[] signatureVerificationData = new byte[BLOCKSIZE + NONCESIZE];
 
-			Util.arrayCopy(nonce, (short) 0, signatureVerificationData,
-					(short) 0, NONCESIZE);
-			Util.arrayCopy(tmp, (short) 0, signatureVerificationData,
-					NONCESIZE, BLOCKSIZE);
+			Util.arrayCopy(nonce, (short) 0, tmp, BLOCKSIZE, NONCESIZE);
+			
 
 			lc = (short) (buf[OFFSET_LC] & 0x00FF);
-			readBuffer(apdu, tmp, (short) 0, lc);
+			readBuffer(apdu, tmp, (short) (BLOCKSIZE + NONCESIZE), lc);
 
-			Signature instance = Signature.getInstance(
-					Signature.ALG_RSA_SHA_PKCS1, false);
-			instance.init(pubKeyCT, Signature.MODE_VERIFY);
-			boolean verified = instance.verify(signatureVerificationData,
-					(short) 0, (short) (NONCESIZE + BLOCKSIZE), tmp, (short) 0,
+			
+			signature_instance.init(pubKeyCT, Signature.MODE_VERIFY);
+			boolean verified = signature_instance.verify(tmp,
+					(short) 0, (short) (NONCESIZE + BLOCKSIZE), tmp, (short) (BLOCKSIZE + NONCESIZE),
 					BLOCKSIZE);
 
 			if (verified) {
 				started = false;
-				Util.arrayCopy(signatureVerificationData, NONCESIZE,
+				Util.arrayCopy(tmp, (short)0,
 						final_mileage, (short) 0, BLOCKSIZE);
 			} else {
 				ISOException.throwIt(SIGNATURE_FAILURE);

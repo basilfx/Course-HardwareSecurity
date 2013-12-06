@@ -109,7 +109,7 @@ public class CarCommandsHandler extends BaseCommandsHandler{
 			terminal.sendCommandAPDU(capdu);
 			
 			// Send signature of final mileage and receivedNonce.
-			byte[] signature = rsaHandler.sign(car.getPrivateKey(), JCUtil.mergeByteArrays(receivedNonce, encryptedNonceAndMileage));
+			byte[] signature = rsaHandler.sign(car.getPrivateKey(), JCUtil.mergeByteArrays(encryptedNonceAndMileage, receivedNonce));
 			capdu = new CommandAPDU(CLA_STOP, FINAL_MILEAGE_SIGNATURE, (byte) 0, (byte) 0, signature);
 			terminal.sendCommandAPDU(capdu);
 		} catch (Exception e) {

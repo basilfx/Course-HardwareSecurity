@@ -84,7 +84,7 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			// SC -> RT: N1
 			// [RT: if N1 = N1 then SC is authenticated]
 			byte[] encrypted_nonce = rsaHandler.encrypt(currentSmartcard.getPublicKey(), nonce);
-			CommandAPDU capdu = new CommandAPDU(CLA_INIT, INIT_START, (byte) 0, (byte) 0, encrypted_nonce, BLOCKSIZE);
+			CommandAPDU capdu = new CommandAPDU(CLA_INIT, INIT_START, (byte) 0, (byte) 0, encrypted_nonce, NONCESIZE);
 			ResponseAPDU rapdu = terminal.sendCommandAPDU(capdu);
 			byte[] data = rapdu.getData();
 			if (Arrays.equals(nonce, data)) {
