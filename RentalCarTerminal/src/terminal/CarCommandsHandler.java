@@ -131,7 +131,6 @@ public class CarCommandsHandler extends BaseCommandsHandler{
 	 */
 	byte[] getEncryptedNonceAndMileage(Car car) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
 		randomizeNonce();
-		mileage += 500;
 		byte[] bytes_mileage = JCUtil.intToBytes(mileage);
 		//byte[] encrypted_mileage = rsaHandler.encrypt(public_key_rt, JCUtil.mergeByteArrays(bytes_nonce, bytes_mileage));
 		byte[] encrypted_mileage = rsaHandler.encrypt(car.getPrivateKey(), JCUtil.mergeByteArrays(nonce, bytes_mileage));
