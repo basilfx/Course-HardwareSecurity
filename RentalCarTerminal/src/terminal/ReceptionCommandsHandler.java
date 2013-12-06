@@ -80,11 +80,11 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			randomizeNonce();
 				
 				
-			// TODO: Ruud: die nonce (N1) hier is niet encrypted met de pubkey van de SC, dat moet wel volgens onze	specs
 			// RT -> SC: {|N1|}pubkey_sc
 			// SC -> RT: N1
-			// [RT: if N1 = N1 then SC is authenticated]				
-			CommandAPDU capdu = new CommandAPDU(CLA_INIT, INIT_START, (byte) 0, (byte) 0, nonce, NONCESIZE);
+			// [RT: if N1 = N1 then SC is authenticated]
+			byte[] encrypted_nonce = rsaHandler.encrypt(currentSmartcard.getPublicKey(), nonce);
+			CommandAPDU capdu = new CommandAPDU(CLA_INIT, INIT_START, (byte) 0, (byte) 0, encrypted_nonce, BLOCKSIZE);
 			ResponseAPDU rapdu = terminal.sendCommandAPDU(capdu);
 			byte[] data = rapdu.getData();
 			if (Arrays.equals(nonce, data)) {
@@ -100,7 +100,7 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			// RT -> N2			
 			capdu = new CommandAPDU(CLA_INIT, INIT_AUTHENTICATED, (byte) 0, (byte) 0, BLOCKSIZE);
 			rapdu = terminal.sendCommandAPDU(capdu);
-			byte[] encrypted_nonce = rapdu.getData();
+			encrypted_nonce = rapdu.getData();
 			byte[] decrypted_nonce = rsaHandler.decrypt(private_key_rt, encrypted_nonce);
 			
 			capdu = new CommandAPDU(CLA_INIT, INIT_SECOND_NONCE, (byte) 0, (byte) 0, decrypted_nonce);
