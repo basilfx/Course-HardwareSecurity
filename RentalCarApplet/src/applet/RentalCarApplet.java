@@ -7,6 +7,7 @@ import javacard.framework.APDU;
 import javacard.framework.Applet;
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
+import javacard.framework.JCSystem;
 import javacard.framework.SystemException;
 import javacard.framework.Util;
 import javacard.security.KeyBuilder;
@@ -50,6 +51,7 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 	private static final byte INIT_SET_CAR_KEY_EXPONENT = (byte) 0x05;
 	private static final byte INIT_CHECK_CAR_KEY_SIGNATURE = (byte) 0x06;
 	private static final byte INIT_SET_SIGNED_ENCRYPTED_CAR_DATA = (byte) 0x07;
+	private static final byte INIT_CHECK_MEM_AVAILABLE = (byte) 0x08;
 
 	/** Read Bytes */
 	private static final byte CLA_READ = (byte) 0xB3;
@@ -179,10 +181,14 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 
 		started = false;
 		has_been_started = false;
+		
+		// First make an array to fill the memory, because JCSystem.getAvailableMemory is used later to check the available
+		// memory and this method has the following property:
+		// If the number of available bytes is greater than 32767, then this method returns 32767.
+		byte[] memory_fill_array = new byte[30000];
 
 		// Register this applet instance with the JCRE.
 		register();
-		
 	
 	}
 
@@ -426,6 +432,13 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 			// decrypt the car data and store it
 			Util.arrayCopy(buf, (short) 0, car_data, (short) 0, BLOCKSIZE);
 			break;
+			
+		case INIT_CHECK_MEM_AVAILABLE:
+			// Check available persistent memory.
+			short mem_available = JCSystem.getAvailableMemory(JCSystem.MEMORY_TYPE_PERSISTENT);
+			buf[0] = (byte) ((mem_available >> 8) & 0xff);
+			buf[1] = (byte) (mem_available & 0xff);
+			apdu.setOutgoingAndSend((short) 0, (short) 2);
 		default:
 			ISOException.throwIt(SW_INS_NOT_SUPPORTED);
 		}
