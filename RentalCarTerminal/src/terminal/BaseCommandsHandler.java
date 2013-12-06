@@ -41,6 +41,17 @@ public class BaseCommandsHandler {
 	
 	protected RSAPublicKey public_key_rt;
 	
+	/** Exception classes */
+	public class TerminalNonceMismatchException extends Exception {
+		public TerminalNonceMismatchException(String message) {
+			super(message);
+		}
+		
+		public TerminalNonceMismatchException(String message, Throwable throwable) {
+			super(message, throwable);
+		}
+	}
+	
 	public BaseCommandsHandler(Terminal terminal) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException{
 		rsaHandler = new RSAHandler();
 		nonce = new byte[NONCESIZE];

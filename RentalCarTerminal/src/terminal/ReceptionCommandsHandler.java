@@ -44,9 +44,7 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 	private static final byte CLA_RESET = (byte) 0xB4;
 	private static final byte RESET_CARD = (byte) 0x01;
 
-	
 	RSAPrivateKey private_key_rt;
-	
 
 	/**
 	 * Constructs the terminal application.
@@ -68,8 +66,9 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 	 * @require car.getId != null.
 	 * @require car.date != null.
 	 * @throws CardException
+	 * @throws TerminalNonceMismatchException
 	 */
-	public void initCard(Smartcard currentSmartcard, Car car) throws CardException {
+	public void initCard(Smartcard currentSmartcard, Car car) throws CardException, TerminalNonceMismatchException {
 		try {
 			// RT -> SC: init
 			// SC -> RT: {|sc_id,pubkey_sc|}privkey_rt		
@@ -79,8 +78,7 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			// make it infeasible for an attacker to pre-compute {|N1|}pubkey_sc for every (or a substantial part of) the possible N1's.
 			// N1 should therefore be a large random number or text.
 			randomizeNonce();
-				
-				
+					
 			// RT -> SC: {|N1|}pubkey_sc
 			// SC -> RT: N1
 			// [RT: if N1 = N1 then SC is authenticated]
@@ -89,13 +87,13 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			ResponseAPDU rapdu = terminal.sendCommandAPDU(capdu);
 			byte[] data = rapdu.getData();
 			if (Arrays.equals(nonce, data)) {
-				// were fine!
+				// The nonces match: the SC is now authenticated to the RT.
 				JCUtil.log("The nonces match! The SC is now authenticated to the RT.");
 			} else {
-				//Oh noes!, throw exception or something
+				// Nonce mismatch! Abort.
 				JCUtil.log("ERROR! The nonces do not match! The SC has not been authenticated to the RT.");
-				// TODO: Ruud: moeten we hier niet exiten?
-				//exit();				
+				
+				throw new TerminalNonceMismatchException("Nonce mismatch");
 			}
 			// SC -> RT {|N2|}pubkey_rt
 			// RT -> N2			
@@ -108,14 +106,11 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			terminal.sendCommandAPDU(capdu);
 			
 			
-			// TODO: Ruud: Moeten deze niet gesigned worden?
 			// RT -> SC: {|pubkey_ct|}privkey_rt			
-			//byte[] car_public_key_modulus = rsaHandler.encrypt(private_key_rt, public_key_ct.getModulus().toByteArray());
 			byte[] car_public_key_modulus = JCUtil.getBytes(car.getPublicKey().getModulus());
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_CAR_KEY_MODULUS, (byte) 0, (byte) 0, car_public_key_modulus);
 			terminal.sendCommandAPDU(capdu);
 			
-			//byte[] car_public_key_exponent = rsaHandler.encrypt(private_key_rt, public_key_ct.getPublicExponent().toByteArray());
 			byte[] car_public_key_exponent = JCUtil.getBytes(car.getPublicKey().getPublicExponent());
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_CAR_KEY_EXPONENT, (byte) 0, (byte) 0, car_public_key_exponent);
 			terminal.sendCommandAPDU(capdu);
@@ -167,13 +162,13 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			
 
 			if (Arrays.equals(nonce, data)){
-				// were fine!
+				// The nonces match. The SC is now authenticated to the RT. 
 				JCUtil.log("The nonces match! The SC is now authenticated to the RT.");
 			} else {
-				//Oh noes!, throw exception or something
+				// Nonce mismatch! Abort.
 				JCUtil.log("ERROR! The nonces do not match! The SC has not been authenticated to the RT.");
-				// TODO: Ruud: moeten we hier niet exiten?
-				//exit();
+				
+				throw new TerminalNonceMismatchException("Nonce mismatch");
 			}
 			
 			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_START_MILEAGE, (byte) 0, (byte) 0, BLOCKSIZE);
@@ -242,9 +237,7 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 	 * @throws IllegalBlockSizeException
 	 * @throws BadPaddingException
 	 */
-	private byte[] getEncryptedCarData(Car car) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
-		// TODO: Ruud: moet hier niet ook de sc_id in?	
-		// TODO: Ruud: moet dit niet ook signed zijn?		
+	private byte[] getEncryptedCarData(Car car) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{	
 		byte[] car_data = JCUtil.mergeByteArrays(JCUtil.shortToBytes(car.getId()), car.getDate());
 		return rsaHandler.encrypt(private_key_rt, car_data);
 	}
