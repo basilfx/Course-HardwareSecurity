@@ -32,6 +32,7 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 	private static final byte INIT_SET_CAR_KEY_EXPONENT = (byte) 0x05;
 	private static final byte INIT_CHECK_CAR_KEY_SIGNATURE = (byte) 0x06;
 	private static final byte INIT_SET_SIGNED_ENCRYPTED_CAR_DATA = (byte) 0x07;
+	private static final byte INIT_CHECK_MEM_AVAILABLE = (byte) 0x08;
 
 	/** Read Bytes */
 	private static final byte CLA_READ = (byte) 0xB3;
@@ -128,6 +129,14 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			// RT->SC: {|car_id, date, sc_id, N0|}pubkey_ct			
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_SIGNED_ENCRYPTED_CAR_DATA, (byte) 0, (byte) 0, getEncryptedCarData(car));
 			terminal.sendCommandAPDU(capdu);
+			
+			// Check available memory.
+			capdu = new CommandAPDU(CLA_INIT, INIT_CHECK_MEM_AVAILABLE, (byte) 0, (byte) 0, (short) 2);
+			rapdu = terminal.sendCommandAPDU(capdu);
+			byte[] mem_available_array = rapdu.getData();
+			short mem_available = JCUtil.bytesToShort(mem_available_array[0], mem_available_array[1]);
+			
+			System.out.println("Memory available (persistent): " + mem_available);
 			
 		} catch (Exception e) {
 			throw new CardException(e.getMessage());
