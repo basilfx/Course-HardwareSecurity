@@ -133,7 +133,6 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			throw new CardException(e.getMessage());
 		}
 	}
-	// TODO: real implementation
 	/**
 	 * Reads the mileage from the smartcard.
 	 * @param currentSmartcard - The currently used smartcard.
