@@ -132,7 +132,7 @@ public class CardUtils {
 
 	/**
 	 * Convert a Calendar instance to a byte array, as expected by the protocol.
-	 * The format is 0 -> DAY, 1 -> MONTH and 2 -> YEAR.
+	 * The output format is 0 -> DAY, 1 -> MONTH and 2 -> YEAR.
 	 * 
 	 * @param date
 	 * @return Date byte array
@@ -143,6 +143,27 @@ public class CardUtils {
 		result[0] = (byte) date.get(Calendar.DAY_OF_MONTH);
 		result[1] = (byte) date.get(Calendar.MONTH);
 		result[2] = (byte) (date.get(Calendar.YEAR) - 2000);
+		
+		return result;
+	}
+	
+	/**
+	 * Convert a date array into a Calendar instance. The input data should be
+	 * a byte array of 3 items long. The input format should be is 0 -> DAY, 
+	 * 1 -> MONTH and 2 -> YEAR.
+	 * 
+	 * @param date Byte array
+	 * @required date.length == 3
+	 * @return Calendar instance if valid, else null
+	 */
+	public static Calendar bytesToDate(byte[] date) {
+		Calendar result = Calendar.getInstance();
+		
+		try {
+			result.set(date[2] + 2000, date[1], date[0]);
+		} catch (ArrayIndexOutOfBoundsException e) {
+			result = null;
+		}
 		
 		return result;
 	}

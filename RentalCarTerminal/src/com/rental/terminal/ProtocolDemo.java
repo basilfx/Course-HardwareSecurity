@@ -21,20 +21,6 @@ import com.rental.terminal.model.Smartcard;
  * @author	Jelte
  */
 public class ProtocolDemo {
-	
-	private short smartCartId;
-
-
-	/**
-	 * Constructor.
-	 */
-	public ProtocolDemo() {
-		smartCartId = (short) 1337;		
-	}
-	
-	public short getSmartCartId() {
-		return smartCartId;
-	}
 
 	/**
 	 * Run a demo of the car rental protocol.
@@ -58,7 +44,6 @@ public class ProtocolDemo {
 		System.out.println("wait 2 seconds so that card can be selected.");
 		Thread.sleep(2000);
 		System.out.println("proceed...");
-	
 		
 		try {
 			System.out.println("-----------------");
@@ -67,7 +52,7 @@ public class ProtocolDemo {
 			
 			RSAHandler rsaHandler = new RSAHandler();
 			Smartcard smartcard = new Smartcard();
-			smartcard.setCardId(demo.getSmartCartId());			
+			smartcard.setCardId((short) 1337);			
 			RSAPublicKey public_key_sc = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_sc");
 			smartcard.setPublicKey(public_key_sc);
 			RSAPrivateKey private_key_sc = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_sc");
@@ -85,10 +70,13 @@ public class ProtocolDemo {
 			Thread.sleep(1000);
 			
 			Car car = new Car();
+			Calendar tomorrow = Calendar.getInstance();
+			tomorrow.add(Calendar.HOUR, 24);
+			
 			car.setId((short)34);
 			car.setPublicKeyFromFile("keys/public_key_ct");
 			car.setPrivateKeyFromFile("keys/private_key_ct");
-			car.setDate(Calendar.getInstance());
+			car.setDate(tomorrow);
 			
 			receptionCommands.initCard(smartcard, car);
 			

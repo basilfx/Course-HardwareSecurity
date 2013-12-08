@@ -16,8 +16,8 @@ import javax.smartcardio.ResponseAPDU;
 
 import com.rental.terminal.CardUtils;
 import com.rental.terminal.Terminal;
-import com.rental.terminal.db.Car;
-import com.rental.terminal.db.Smartcard;
+import com.rental.terminal.model.Car;
+import com.rental.terminal.model.Smartcard;
 
 
 /**
@@ -208,14 +208,12 @@ public class CarCommandsHandler extends BaseCommandsHandler {
 			byte[] data = rsaHandler.decrypt(public_key_rt, car_data);
 
 			short decrypted_car_id = CardUtils.bytesToShort(data[0], data[1]);
-			short day = data[2];
-			short month = data[3];
-			short year = data[4];
-
+			Calendar expirationDate = CardUtils.bytesToDate(CardUtils.subArray(data, 2, 3));
+			
 			System.out.println("car ID from terminal: " + car.getId());
 			System.out.println("car ID from SC: " + decrypted_car_id);
-			Calendar expirationDate = Calendar.getInstance();
-			expirationDate.set(year, month, day);
+			System.out.println("car expiration date: " + expirationDate);
+
 			// Check whether the decrypted car ID matches the ID of this car.
 			if (car.getId() != decrypted_car_id) {
 				throw new CarTerminalInvalidCarIdException();

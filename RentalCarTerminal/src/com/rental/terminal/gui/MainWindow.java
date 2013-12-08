@@ -8,6 +8,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
@@ -73,9 +75,9 @@ public class MainWindow {
 		private Button setupEditSmartcard;
 		private Button setupDeleteSmartcard;
 		
-		
 		private Button deskInit;
 		private Button deskReset;
+		private Button deskRead;
 		private TypedCombo<Car> deskCars;
 		private Button deskAddCar;
 		private Button deskEditCar;
@@ -94,9 +96,8 @@ public class MainWindow {
 			//
 			this.display = new Display();
 			this.shell = new Shell(this.display);
-			this.shell.setLayout(new FormLayout());
-			//this.shell.setMenu(new Menu(this.display));
 			
+			this.shell.setLayout(new FormLayout());
 			this.shell.setSize(1024, 500);
 			this.shell.setText("Terminal Emulator");
 			
@@ -172,15 +173,15 @@ public class MainWindow {
 			this.setupDeleteSmartcard = new Button(smartCardSelectGroup, SWT.None);
 			this.setupDeleteSmartcard.setText("Delete");
 			
-			// Init button
+			// Issue button
 			Group setupActionsGroup = new Group(setupForm, SWT.NONE);
 			setupActionsGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 			setupActionsGroup.setLayout(new GridLayout(4, false));
 			setupActionsGroup.setText("Actions");
 			
 		    this.setupIssue = new Button(setupActionsGroup, SWT.PUSH);
-		    
 		    this.setupIssue.setText("Issue card");
+		    this.setupIssue.setEnabled(false);
 		    
 			//
 			// Desk terminal tab
@@ -199,7 +200,7 @@ public class MainWindow {
 			carSelectGroup.setText("Select car");
 			
 			// Car selector
-			this.deskCars = new TypedCombo(carSelectGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
+			this.deskCars = new TypedCombo<Car>(carSelectGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
 			this.deskCars.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 			
 			this.deskAddCar = new Button(carSelectGroup, SWT.None);
@@ -219,10 +220,10 @@ public class MainWindow {
 			
 			this.deskDate = new Text(deskPeriodGroup, SWT.BORDER);
 			
-			Calendar c = Calendar.getInstance(); 
-			c.setTime(new Date()); 
+			Calendar c = Calendar.getInstance();  
 			c.add(Calendar.DATE, 7);
 			this.deskDate.setText(new SimpleDateFormat("yyyy-MM-dd").format(c.getTime()));
+			this.deskDate.setEnabled(false);
 			
 			// Actions
 			Group deskActionsGroup = new Group(deskForm, SWT.NONE);
@@ -232,13 +233,18 @@ public class MainWindow {
 			
 			// Init button
 		    this.deskInit = new Button(deskActionsGroup, SWT.None);
-		    
 		    this.deskInit.setText("Init card");
+		    this.deskInit.setEnabled(false);
 			
+		    // Read button
+		    this.deskRead = new Button(deskActionsGroup, SWT.None);
+		    this.deskRead.setText("Read card");
+		    this.deskRead.setEnabled(false);
+		    
 			// Reset button
 		    this.deskReset = new Button(deskActionsGroup, SWT.None);
-		    
 		    this.deskReset.setText("Reset card");
+		    this.deskReset.setEnabled(false);
 		    
 			//
 			// Car terminal tab
@@ -262,18 +268,20 @@ public class MainWindow {
 			// Stop button
 			this.carStart = new Button(carActionsGroup, SWT.None);
 			this.carStart.setText("Start car");
+			this.carStart.setEnabled(false);
 			
 			// Stop button
 			this.carStop = new Button(carActionsGroup, SWT.None);
 			this.carStop.setText("Stop car");
+			this.carStop.setEnabled(false);
 			
 			// Stop button
 			this.carDrive = new Button(carActionsGroup, SWT.None);
 			this.carDrive.setText("Drive 10KM");
+			this.carDrive.setEnabled(false);
 			
 			// Mileage label
 			this.carMileage = new Label(carActionsGroup, SWT.None);
-			
 			this.carMileage.setText("Current mileage: 0");
 			this.carMileage.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 			
@@ -355,10 +363,25 @@ public class MainWindow {
 	/**
 	 * 
 	 */
-	public void setupButtons() {		
+	public void setupButtons() {
 		//
-		// Smart card
+		// Smartcard
 		//
+		
+		// Smartcard select on change
+		this.view.setupSmartcard.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent arg0) {
+				boolean condition = (view.setupSmartcard.getSelectionIndex() != -1);
+				
+				view.setupIssue.setEnabled(condition);
+			}
+			
+			@Override
+			public void widgetDefaultSelected(SelectionEvent arg0) {
+
+			}
+		});
 		
 		// Add smart card button
 		this.view.setupAddSmartcard.addListener(SWT.Selection, new Listener() {
@@ -437,8 +460,26 @@ public class MainWindow {
 		});
 		
 		//
-		// Cars
+		// Desk
 		//
+		
+		// Car select on change
+		this.view.deskCars.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent arg0) {
+				boolean condition = (view.deskCars.getSelectionIndex() != -1);
+				
+				view.deskDate.setEnabled(condition);
+				view.deskInit.setEnabled(condition);
+				view.deskRead.setEnabled(condition);
+				view.deskReset.setEnabled(condition);
+			}
+			
+			@Override
+			public void widgetDefaultSelected(SelectionEvent arg0) {
+
+			}
+		});
 		
 		// Add car button
 		this.view.deskAddCar.addListener(SWT.Selection, new Listener() {
@@ -614,6 +655,15 @@ public class MainWindow {
 			}
 		});
 		
+		// Read button
+		this.view.deskRead.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+		});
+		
 		// Reset button
 		this.view.deskReset.addListener(SWT.Selection, new Listener() {
 			@Override
@@ -634,8 +684,28 @@ public class MainWindow {
 			}
 		});
 		
+		//
+		// Car
+		//
+		// Smartcard select on change
+		this.view.carCars.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent arg0) {
+				boolean condition = (view.carCars.getSelectionIndex() != -1);
+				
+				view.carStart.setEnabled(condition);
+				view.carStop.setEnabled(condition);
+				view.carDrive.setEnabled(condition);
+			}
+			
+			@Override
+			public void widgetDefaultSelected(SelectionEvent arg0) {
+
+			}
+		});
+		
 		// Car start button
-		view.carStart.addListener(SWT.Selection, new Listener() {
+		this.view.carStart.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
 				view.carStart.setEnabled(false);
@@ -696,7 +766,7 @@ public class MainWindow {
 		});
 		
 		// Car drive button
-		view.carDrive.addListener(SWT.Selection, new Listener() {
+		this.view.carDrive.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
 				view.carDrive.setEnabled(false);
