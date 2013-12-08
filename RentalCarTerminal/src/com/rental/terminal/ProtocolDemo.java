@@ -10,9 +10,9 @@ import java.util.Calendar;
 import com.rental.terminal.commands.CarCommandsHandler;
 import com.rental.terminal.commands.IssuingCommandsHandler;
 import com.rental.terminal.commands.ReceptionCommandsHandler;
-import com.rental.terminal.db.Car;
-import com.rental.terminal.db.Smartcard;
 import com.rental.terminal.encryption.RSAHandler;
+import com.rental.terminal.model.Car;
+import com.rental.terminal.model.Smartcard;
 
 
 /**

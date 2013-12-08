@@ -12,7 +12,7 @@ import javax.smartcardio.ResponseAPDU;
 
 import com.rental.terminal.CardUtils;
 import com.rental.terminal.Terminal;
-import com.rental.terminal.db.Smartcard;
+import com.rental.terminal.model.Smartcard;
 
 /**
  * Issuing Terminal application.

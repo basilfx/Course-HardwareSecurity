@@ -1,5 +1,6 @@
 package com.rental.terminal.gui;
 
+import java.io.IOException;
 import java.util.Random;
 
 import org.eclipse.swt.SWT;
@@ -17,7 +18,7 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import com.rental.terminal.db.Smartcard;
+import com.rental.terminal.model.Smartcard;
 
 /**
  * Add/edit smart card dialog
@@ -90,6 +91,8 @@ public class SmartcardDialog extends BaseDialog {
 
 	@Override
 	public void setup() {
+		this.view = new View(this.getParent());
+		
 		this.setupForm();
 		this.setupButtons();
 	}
@@ -111,36 +114,46 @@ public class SmartcardDialog extends BaseDialog {
     	this.view.ok.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
-				SmartcardDialog.this.result = 0;
 				Short cardId;
 				
 				try {
 					cardId = Short.parseShort(SmartcardDialog.this.view.cardId.getText());
 				} catch (NumberFormatException e) {
-					MessageBox message = new MessageBox(SmartcardDialog.this.view.shell);
+					new MessageBoxBuilder(SmartcardDialog.this)
+						.setTitle("Validation error")
+						.setMessage("Card ID missing or not a number")
+						.open();
 					
-					message.setMessage("Card ID missing or not a number");
-					message.setText("Validation error");
-					
-					message.open();
 					return;
 				}
 				
 				// Parse the number
 				smartcard.setCardId(cardId);
 				
+				try {
+					smartcard.setPublicKeyFromFile("keys/public_key_sc");
+					smartcard.setPrivateKeyFromFile("keys/private_key_sc");
+				} catch (IOException e) {
+					new MessageBoxBuilder(SmartcardDialog.this)
+						.setTitle("File error")
+						.setMessage("Could not load public and/or private key from file.")
+						.open();
+					
+					return;
+				} catch (Exception e) {
+					e.printStackTrace();
+					return;
+				}
+				
 				// Done
-				SmartcardDialog.this.close();
+				SmartcardDialog.this.close(0);
 			}
 		});
     	
     	this.view.cancel.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
-				SmartcardDialog.this.result = 1;
-				
-				// Done
-				SmartcardDialog.this.close();
+				SmartcardDialog.this.close(1);
 			}
 		});
     }

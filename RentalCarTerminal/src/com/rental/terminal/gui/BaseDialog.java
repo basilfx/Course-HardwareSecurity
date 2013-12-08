@@ -39,7 +39,9 @@ public abstract class BaseDialog extends Dialog {
         return this.result;
     }
     
-    public void close() {
+    public void close(int result) {
+    	this.result = result;
+    	
     	this.getShell().close();
     	this.getShell().dispose();
     	

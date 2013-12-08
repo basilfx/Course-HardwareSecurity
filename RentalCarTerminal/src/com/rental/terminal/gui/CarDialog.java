@@ -1,8 +1,6 @@
 package com.rental.terminal.gui;
 
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -10,17 +8,14 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Dialog;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import com.google.common.base.Strings;
-import com.rental.terminal.db.Car;
+import com.rental.terminal.model.Car;
 
 /**
  * Add/edit car dialog
@@ -90,6 +85,8 @@ public class CarDialog extends BaseDialog {
 	
 	@Override
     public void setup() {
+		this.view = new View(this.getParent());
+		
     	this.setupForm();
     	this.setupButtons();
     }
@@ -102,19 +99,14 @@ public class CarDialog extends BaseDialog {
     	this.view.ok.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
-				CarDialog.this.result = 0;
-				
 				String name = CarDialog.this.view.name.getText();
 				
 				if (name.isEmpty()) {
-					MessageBox message = new MessageBox(CarDialog.this.view.shell);
-					
-					message.setMessage("Name is missing");
-					message.setText("Validation error");
-					
-					message.open();
-					
-					// Stop here
+					new MessageBoxBuilder(CarDialog.this.getShell())
+						.setTitle("Name is missing")
+						.setMessage("The name of the car is missing.")
+						.open();
+
 					return;
 				}
 				
@@ -122,23 +114,27 @@ public class CarDialog extends BaseDialog {
 				try {
 					CarDialog.this.car.setPublicKeyFromFile("keys/public_key_ct");
 					CarDialog.this.car.setPrivateKeyFromFile("keys/private_key_ct");
+				} catch (IOException e) {
+					new MessageBoxBuilder(CarDialog.this)
+						.setTitle("File error")
+						.setMessage("Could not load public and/or private key from file.")
+						.open();
+					
+					return;
 				} catch (Exception e) {
 					e.printStackTrace();
 					return;
 				}
 				
 				// Done
-				CarDialog.this.close();
+				CarDialog.this.close(0);
 			}
 		});
     	
     	this.view.cancel.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
-				CarDialog.this.result = 1;
-				
-				// Done
-				CarDialog.this.close();
+				CarDialog.this.close(1);
 			}
 		});
     }

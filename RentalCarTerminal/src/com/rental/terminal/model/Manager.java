@@ -1,4 +1,4 @@
-package com.rental.terminal.db;
+package com.rental.terminal.model;
 
 import java.sql.SQLException;
 

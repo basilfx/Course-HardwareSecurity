@@ -16,9 +16,9 @@ import javax.smartcardio.ResponseAPDU;
 
 import com.rental.terminal.CardUtils;
 import com.rental.terminal.Terminal;
-import com.rental.terminal.db.Car;
-import com.rental.terminal.db.Smartcard;
 import com.rental.terminal.encryption.RSAHandler;
+import com.rental.terminal.model.Car;
+import com.rental.terminal.model.Smartcard;
 
 
 /**
