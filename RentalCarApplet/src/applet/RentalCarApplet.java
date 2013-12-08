@@ -392,9 +392,6 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 			//Set the length of the modulus as the first byte of tmp
 			Util.setShort(tmp, (short)0, lc);
 			
-			// Store the modulus of the public key of the CT.
-			//pubKeyCT.setModulus(tmp, (short) 0, lc);
-
 			break;
 		case INIT_SET_CAR_KEY_EXPONENT:
 
@@ -438,7 +435,7 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 			// Make sure that the terminal has been authenticated.
 			if (terminal_authenticated[0] == 0x01) {
 				// Store the car data.
-				Util.arrayCopy(buf, (short) 0, car_data, (short) 0, BLOCKSIZE);
+				readBuffer(apdu, car_data, (short) 0, BLOCKSIZE);
 			}
 			break;
 		case INIT_CHECK_MEM_AVAILABLE:

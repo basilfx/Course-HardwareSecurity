@@ -201,28 +201,29 @@ public class CarCommandsHandler extends BaseCommandsHandler {
 			// Check the decrypted data.
 			byte[] nonce = JCUtil.subArray(nonce_and_car_data, 0, NONCESIZE);
 		
-//			byte[] car_data = JCUtil.subArray(nonce_and_car_data, NONCESIZE, BLOCKSIZE);
-//			
-//			// Decrypt encrypted car data.
-//			byte[] data = rsaHandler.decrypt(public_key_rt, car_data);
-//
-//			short decrypted_car_id = JCUtil.bytesToShort(car_data[0], car_data[1]);
-//			short day = car_data[2];
-//			short month = car_data[3];
-//			short year = car_data[4];
-//
-//			System.out.println("car ID from terminal: " + car.getId());
-//			System.out.println("car ID from SC: " + decrypted_car_id);
-//			
-//			// Check whether the decrypted car ID matches the ID of this car.
-//			if (car.getId() != decrypted_car_id) {
-//				throw new CarTerminalInvalidCarIdException();
-//			}
+			byte[] car_data = JCUtil.subArray(nonce_and_car_data, NONCESIZE, BLOCKSIZE);
+			/**
+			// Decrypt encrypted car data.
+			byte[] data = rsaHandler.decrypt(public_key_rt, car_data);
+
+			short decrypted_car_id = JCUtil.bytesToShort(car_data[0], car_data[1]);
+			short day = car_data[2];
+			short month = car_data[3];
+			short year = car_data[4];
+
+			System.out.println("car ID from terminal: " + car.getId());
+			System.out.println("car ID from SC: " + decrypted_car_id);
+			
+			// Check whether the decrypted car ID matches the ID of this car.
+			if (car.getId() != decrypted_car_id) {
+				throw new CarTerminalInvalidCarIdException();
+			}
 			// Check whether the received expiration date is today or in the future.
-			/*else if (day == 3 && month == 11 && year == 13) {
+			else if (day == 3 && month == 11 && year == 13) {
 				//<= Calendar.DAY_OF_MONTH || month != Calendar.MONTH + 1 || year != Calendar.YEAR
 				throw new CarTerminalInvalidDateException();
-			}*/
+			}
+			*/
 			return nonce;
 		} catch (Exception e) {
 			e.printStackTrace();
