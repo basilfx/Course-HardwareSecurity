@@ -6,6 +6,8 @@ import java.util.Calendar;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.smartcardio.CardException;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
@@ -36,6 +38,9 @@ import com.rental.terminal.commands.BaseCommandsHandler;
 import com.rental.terminal.commands.CarCommandsHandler;
 import com.rental.terminal.commands.IssuingCommandsHandler;
 import com.rental.terminal.commands.ReceptionCommandsHandler;
+import com.rental.terminal.commands.BaseCommandsHandler.TerminalNonceMismatchException;
+import com.rental.terminal.commands.CarCommandsHandler.CarTerminalInvalidCarIdException;
+import com.rental.terminal.commands.CarCommandsHandler.CarTerminalInvalidDateException;
 import com.rental.terminal.model.Car;
 import com.rental.terminal.model.Manager;
 import com.rental.terminal.model.Smartcard;
@@ -769,10 +774,15 @@ public class MainWindow {
 							// Store in database;
 							manager.getCarDao().update(car);
 						}
+					} catch (CarTerminalInvalidCarIdException e) {
+						view.addLogItem("The card is not registered for this car.");
+						return;
+					} catch (CarTerminalInvalidDateException e) {
+						view.addLogItem("The car is not allowed to start anymore. Date expired");
+						return;
 					} catch (Exception e) {
 						view.addLogItem("Failed starting car");
 						LOGGER.log(Level.SEVERE, "Exception", e);
-						
 						return;
 					}
 				} finally {
@@ -906,6 +916,7 @@ public class MainWindow {
 			return;
 		}
 
+		// Build GUI
 		this.view = new View();
 		
 		this.setupButtons();
