@@ -31,6 +31,8 @@ public class CarDialog extends BaseDialog {
 		private Button cancel;
 		
 		private Text name;
+		private Text publicKey;
+		private Text privateKey;
 		
 		private View(Shell parent) {
 			this.shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
@@ -49,6 +51,30 @@ public class CarDialog extends BaseDialog {
 	        
 	        this.name = new Text(nameField, SWT.BORDER | SWT.SINGLE);
 	        this.name.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+	        
+	        // Public key field
+	        Composite publicKeyField = new Composite(this.shell, SWT.None);
+	        publicKeyField.setLayout(new GridLayout(2, true));
+	        publicKeyField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+	        
+	        Label publicKeyLabel = new Label(publicKeyField, SWT.None);
+	        publicKeyLabel.setText("Public key:");
+	        
+	        this.publicKey = new Text(publicKeyField, SWT.BORDER | SWT.SINGLE | SWT.READ_ONLY);
+	        this.publicKey.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+	        this.publicKey.setText("keys/public_key_ct");
+	        
+	        // Private key field
+	        Composite privateKeyField = new Composite(this.shell, SWT.None);
+	        privateKeyField.setLayout(new GridLayout(2, true));
+	        privateKeyField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+	        
+	        Label privateKeyLabel = new Label(privateKeyField, SWT.None);
+	        privateKeyLabel.setText("Private key:");
+	        
+	        this.privateKey = new Text(privateKeyField, SWT.BORDER | SWT.SINGLE | SWT.READ_ONLY);
+	        this.privateKey.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+	        this.privateKey.setText("keys/private_key_ct");
 	        
 	        // OK/Cancel buttons
 	        Composite buttonField = new Composite(this.shell, SWT.RIGHT);
@@ -99,21 +125,24 @@ public class CarDialog extends BaseDialog {
     	this.view.ok.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
-				String name = CarDialog.this.view.name.getText();
+				String name = view.name.getText();
+				String publicKey = view.publicKey.getText();
+				String privateKey = view.privateKey.getText();
 				
-				if (name.isEmpty()) {
+				if (name.isEmpty() || publicKey.isEmpty() || privateKey.isEmpty()) {
 					new MessageBoxBuilder(CarDialog.this.getShell())
 						.setTitle("Name is missing")
-						.setMessage("The name of the car is missing.")
+						.setMessage("The name of the car, public key and/or private key is missing.")
 						.open();
 
 					return;
 				}
 				
 				CarDialog.this.car.setName(name);
+				
 				try {
-					CarDialog.this.car.setPublicKeyFromFile("keys/public_key_ct");
-					CarDialog.this.car.setPrivateKeyFromFile("keys/private_key_ct");
+					CarDialog.this.car.setPublicKeyFromFile(publicKey);
+					CarDialog.this.car.setPrivateKeyFromFile(privateKey);
 				} catch (IOException e) {
 					new MessageBoxBuilder(CarDialog.this)
 						.setTitle("File error")

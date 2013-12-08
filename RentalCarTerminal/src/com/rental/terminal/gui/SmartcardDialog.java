@@ -31,6 +31,8 @@ public class SmartcardDialog extends BaseDialog {
 		
 		private Text cardId;
 		private Button generate;
+		private Text publicKey;
+		private Text privateKey;
 
 		private View(Shell parent) {
 			this.shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
@@ -52,6 +54,30 @@ public class SmartcardDialog extends BaseDialog {
 	        
 	        this.generate = new Button(cardIdField, SWT.None);
 	        this.generate.setText("Generate card ID");
+	        
+	        // Public key field
+	        Composite publicKeyField = new Composite(this.shell, SWT.None);
+	        publicKeyField.setLayout(new GridLayout(2, true));
+	        publicKeyField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+	        
+	        Label publicKeyLabel = new Label(publicKeyField, SWT.None);
+	        publicKeyLabel.setText("Public key:");
+	        
+	        this.publicKey = new Text(publicKeyField, SWT.BORDER | SWT.SINGLE | SWT.READ_ONLY);
+	        this.publicKey.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+	        this.publicKey.setText("keys/public_key_sc");
+	        
+	        // Private key field
+	        Composite privateKeyField = new Composite(this.shell, SWT.None);
+	        privateKeyField.setLayout(new GridLayout(2, true));
+	        privateKeyField.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+	        
+	        Label privateKeyLabel = new Label(privateKeyField, SWT.None);
+	        privateKeyLabel.setText("Private key:");
+	        
+	        this.privateKey = new Text(privateKeyField, SWT.BORDER | SWT.SINGLE | SWT.READ_ONLY);
+	        this.privateKey.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+	        this.privateKey.setText("keys/private_key_sc");
 	        
 	        // OK/Cancel buttons
 	        Composite buttonField = new Composite(this.shell, SWT.RIGHT);
@@ -112,6 +138,8 @@ public class SmartcardDialog extends BaseDialog {
 			@Override
 			public void handleEvent(Event arg0) {
 				Short cardId;
+				String publicKey = view.publicKey.getText();
+				String privateKey = view.privateKey.getText();
 				
 				try {
 					cardId = Short.parseShort(SmartcardDialog.this.view.cardId.getText());
@@ -124,12 +152,21 @@ public class SmartcardDialog extends BaseDialog {
 					return;
 				}
 				
-				// Parse the number
-				smartcard.setCardId(cardId);
+				if (publicKey.isEmpty() || privateKey.isEmpty()) {
+					new MessageBoxBuilder(SmartcardDialog.this)
+						.setTitle("Validation error")
+						.setMessage("Public and/or private key missing")
+						.open();
 				
+					return;
+				}
+				
+				// Set the card parameters
+				smartcard.setCardId(cardId);
+			
 				try {
-					smartcard.setPublicKeyFromFile("keys/public_key_sc");
-					smartcard.setPrivateKeyFromFile("keys/private_key_sc");
+					smartcard.setPublicKeyFromFile(publicKey);
+					smartcard.setPrivateKeyFromFile(privateKey);
 				} catch (IOException e) {
 					new MessageBoxBuilder(SmartcardDialog.this)
 						.setTitle("File error")

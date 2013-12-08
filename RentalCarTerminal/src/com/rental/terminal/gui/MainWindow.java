@@ -346,6 +346,7 @@ public class MainWindow {
 		
 		public void addLogItem(String message) {
 			this.log.add(message);
+			this.log.setSelection(this.log.getItemCount() - 1);
 		}
 	}
 	
