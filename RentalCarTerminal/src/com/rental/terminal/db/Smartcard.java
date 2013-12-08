@@ -27,13 +27,13 @@ public class Smartcard {
 	@DatabaseField(canBeNull = false, unique = true)
 	private short cardId;
 
-	@DatabaseField(canBeNull = true, dataType=DataType.SERIALIZABLE)
+	@DatabaseField(canBeNull = true, dataType = DataType.SERIALIZABLE)
 	private RSAPublicKey publicKey;
 	
-	@DatabaseField(canBeNull = true, dataType=DataType.SERIALIZABLE)
+	@DatabaseField(canBeNull = true, dataType = DataType.SERIALIZABLE)
 	private RSAPrivateKey privateKey;
 	
-	@DatabaseField(canBeNull = true)
+	@DatabaseField(canBeNull = true, dataType = DataType.BYTE_ARRAY)
 	private byte[] signature;
 	
 	@DatabaseField(canBeNull = true, foreign = true)
