@@ -459,6 +459,44 @@ public class MainWindow {
 			}
 		});
 		
+		// Issue button
+		this.view.setupIssue.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event arg0) {
+				view.setupIssue.setEnabled(false);
+				
+				try {
+					Smartcard smartcard = view.setupSmartcard.getSelected();
+				
+					// Make sure smartcard is selected
+					if (smartcard == null) {
+						view.addLogItem("No smartcard selected");
+					}
+					
+					// Make sure card reader is connected
+					if (!terminal.isCardPresent()) {
+						view.addLogItem("No card present");
+						return;
+					}
+					
+					// Issue card
+					try {
+						new IssuingCommandsHandler(terminal).issueCard(smartcard);
+					} catch (Exception e) {
+						view.addLogItem("Card issueing failed. Card already issued?");
+						LOGGER.log(Level.SEVERE, "Exception", e);
+						
+						return;
+					}
+				} finally {
+					view.setupIssue.setEnabled(true);
+				}
+				
+				// Done
+				view.addLogItem("Card issueing complete");
+			}
+		});
+		
 		//
 		// Desk
 		//
@@ -559,38 +597,6 @@ public class MainWindow {
 					view.deskCars.remove(car);
 					view.carCars.remove(car);
 				}
-			}
-		});
-		
-		// Issue button
-		this.view.setupIssue.addListener(SWT.Selection, new Listener() {
-			@Override
-			public void handleEvent(Event arg0) {
-				view.setupIssue.setEnabled(false);
-				
-				try {
-					Smartcard smartcard = view.setupSmartcard.getSelected();
-				
-					// Make sure smartcard is selected
-					if (smartcard == null) {
-						view.addLogItem("No smartcard selected");
-					}
-					
-					// Issue card
-					try {
-						new IssuingCommandsHandler(terminal).issueCard(smartcard);
-					} catch (Exception e) {
-						view.addLogItem("Card issueing failed. Card already issued?");
-						LOGGER.log(Level.SEVERE, "Exception", e);
-						
-						return;
-					}
-				} finally {
-					view.setupIssue.setEnabled(true);
-				}
-				
-				// Done
-				view.addLogItem("Card issueing complete");
 			}
 		});
 		
@@ -896,11 +902,12 @@ public class MainWindow {
 		// Setup terminal
 		try {
 			this.terminal = new Terminal();
-			Thread.sleep(2000);
 		} catch (InterruptedException e) {
 			LOGGER.log(Level.SEVERE, "Exception", e);
 			return;
 		}
+
+		this.view = new View();
 		
 		this.setupButtons();
 		this.setupSmartCards();

@@ -37,18 +37,25 @@ public class Terminal {
 	// The card applet.
 	protected CardChannel applet;
 	
+	/**
+	 * @var Indicate if thread is running
+	 */
 	private boolean running;
+	
+	/**
+	 * @var Indicate the card is ready to communicate
+	 */
+	private boolean ready;
 
 	/**
 	 * Constructs the terminal application.
 	 * @throws InterruptedException 
 	 */
 	public Terminal() throws InterruptedException {
-		
+		ready = false;
 		running = true;
 		
 		(new CardThread()).start();
-		Thread.sleep(2000);
 	}
 
 	class CardThread extends Thread {
@@ -69,6 +76,10 @@ public class Terminal {
 							if (c.isCardPresent()) {
 								try {
 									Card card = c.connect("*");
+									
+									// Stabilize
+									Thread.sleep(1000);
+									
 									try {
 										// Select applet.
 										applet = card.getBasicChannel();
@@ -78,9 +89,14 @@ public class Terminal {
 											throw new Exception("Select failed");
 										}
 
+										// Mark terminal as ready
+										Terminal.this.ready = true;
+										
 										// Wait for the card to be removed
-										while (c.isCardPresent() && running) {
-										}
+										while (c.isCardPresent() && running);
+										
+										// Mark terminal as not ready
+										Terminal.this.ready = false;
 
 										break;
 									} catch (Exception e) {
@@ -110,7 +126,8 @@ public class Terminal {
 		}
 	}
 	
-	public boolean isCardPresent(){		
+	public boolean isCardPresent() {
+		
 		TerminalFactory tf = TerminalFactory.getDefault();
 		CardTerminals ct = tf.terminals();
 		List<CardTerminal> cs;
@@ -118,11 +135,13 @@ public class Terminal {
 			cs = ct.list(CardTerminals.State.CARD_PRESENT);
 			for (CardTerminal c : cs) {
 				if (c.isCardPresent()){
-					return true;
+					return this.ready;
 				}
 			}
 		} catch (CardException e) {
+			// Do nothing
 		}
+		
 		return false;
 	}
 

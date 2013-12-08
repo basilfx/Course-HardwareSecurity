@@ -41,8 +41,8 @@ public class ProtocolDemo {
 		
 		
 		// Wait 2 seconds so that the smart card can be selected.
-		System.out.println("wait 2 seconds so that card can be selected.");
-		Thread.sleep(2000);
+		System.out.println("wait until the card is ready");
+		while (!terminal.isCardPresent());
 		System.out.println("proceed...");
 		
 		try {
