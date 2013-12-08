@@ -1,20 +1,20 @@
-package com.rental.terminal.model;
+package com.rental.terminal.db;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Calendar;
-
 
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
-import com.rental.terminal.Car;
-import com.rental.terminal.JCUtil;
 import com.rental.terminal.encryption.RSAHandler;
 
 
 @DatabaseTable(tableName = "cars")
-public class CarDB {
+public class Car {
 
 	@DatabaseField(generatedId = true)
 	private int id;
@@ -60,6 +60,20 @@ public class CarDB {
 		return publicKey;
 	}
 
+	public RSAPublicKey getPublicKeyInstance() throws NoSuchAlgorithmException, InvalidKeySpecException {
+		RSAHandler rsaHandler = new RSAHandler();
+
+		if (this.publicKey != null) {
+			try {
+				return rsaHandler.readPublicKeyFromFileSystem(this.publicKey);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		return null;
+	}
+	
 	public void setPublicKey(String publicKey) {
 		this.publicKey = publicKey;
 	}
@@ -68,6 +82,20 @@ public class CarDB {
 		return privateKey;
 	}
 
+	public RSAPrivateKey getPrivateKeyInstance() throws NoSuchAlgorithmException, InvalidKeySpecException {
+		RSAHandler rsaHandler = new RSAHandler();
+
+		if (this.publicKey != null) {
+			try {
+				return rsaHandler.readPrivateKeyFromFileSystem(this.privateKey);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} 
+		
+		return null;
+	}
+	
 	public void setPrivateKey(String privateKey) {
 		this.privateKey = privateKey;
 	}
@@ -102,26 +130,5 @@ public class CarDB {
 
 	public void setStarts(int starts) {
 		this.starts = starts;
-	}
-
-	public Car toCar() throws Exception {
-		Car car = new Car();
-		
-		car.setId((short) this.id);
-		car.setDate(this.date != null ? JCUtil.dateToBytes(this.date) : null);
-		car.setStartMileage(this.startMileage);
-		car.setFinalMileage(this.mileage);
-		
-		RSAHandler rsaHandler = new RSAHandler();
-
-		if (this.publicKey != null) {
-			car.setPublicKey(rsaHandler.readPublicKeyFromFileSystem(this.publicKey));
-		}
- 
-		if (this.privateKey != null) {
-			car.setPrivateKey(rsaHandler.readPrivateKeyFromFileSystem(this.privateKey));
-		}
-		
-		return car;
 	}
 }

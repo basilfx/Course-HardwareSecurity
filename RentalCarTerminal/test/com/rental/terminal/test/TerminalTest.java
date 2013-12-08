@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
+import java.util.Calendar;
 
 import javax.smartcardio.CardException;
 
@@ -15,13 +16,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.rental.terminal.Car;
 import com.rental.terminal.CarCommandsHandler;
 import com.rental.terminal.IssuingCommandsHandler;
 import com.rental.terminal.JCUtil;
 import com.rental.terminal.ReceptionCommandsHandler;
 import com.rental.terminal.Smartcard;
 import com.rental.terminal.Terminal;
+import com.rental.terminal.db.Car;
 import com.rental.terminal.encryption.RSAHandler;
 
 
@@ -56,15 +57,9 @@ public class TerminalTest {
 		
 		car = new Car();
 		car.setId((short)34);
-		RSAPublicKey public_key_ct = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_ct");
-		car.setPublicKey(public_key_ct);
-		RSAPrivateKey private_key_ct = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_ct");
-		car.setPrivateKey(private_key_ct);
-		byte[] date = new byte[3];
-		date[0] = 2;
-		date[1] = 11;
-		date[2] = 13;
-		car.setDate(date);
+		car.setPublicKey("keys/public_key_ct");
+		car.setPrivateKey("keys/private_key_ct");
+		car.setDate(Calendar.getInstance());
 	}
 
 	@Before
@@ -107,7 +102,7 @@ public class TerminalTest {
 		
 		receptionCommands.read(smartcard,car);
 		assertEquals("Start mileage", start_mileage, car.getStartMileage());
-		assertEquals("Final mileage", final_mileage, car.getFinalMileage());
+		assertEquals("Current mileage", final_mileage, car.getMileage());
 		
 	}
 	

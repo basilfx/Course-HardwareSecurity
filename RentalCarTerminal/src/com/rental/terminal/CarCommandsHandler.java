@@ -3,13 +3,8 @@ package com.rental.terminal;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -18,7 +13,7 @@ import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
-import com.rental.terminal.encryption.RSAHandler;
+import com.rental.terminal.db.Car;
 
 
 /**
@@ -148,7 +143,7 @@ public class CarCommandsHandler extends BaseCommandsHandler {
 			terminal.sendCommandAPDU(capdu);
 
 			// Send signature of final mileage and receivedNonce.
-			byte[] signature = rsaHandler.sign(car.getPrivateKey(), JCUtil.mergeByteArrays(encryptedNonceAndMileage,
+			byte[] signature = rsaHandler.sign(car.getPrivateKeyInstance(), JCUtil.mergeByteArrays(encryptedNonceAndMileage,
 					receivedNonce));
 			capdu = new CommandAPDU(CLA_STOP, FINAL_MILEAGE_SIGNATURE, (byte) 0, (byte) 0, signature);
 			terminal.sendCommandAPDU(capdu);
@@ -172,15 +167,16 @@ public class CarCommandsHandler extends BaseCommandsHandler {
 	 * @throws NoSuchPaddingException
 	 * @throws IllegalBlockSizeException
 	 * @throws BadPaddingException
+	 * @throws InvalidKeySpecException 
 	 */
 	byte[] getEncryptedNonceAndMileage(Car car) throws InvalidKeyException, NoSuchAlgorithmException,
-			NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException {
+			NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeySpecException {
 		randomizeNonce();
 		byte[] bytes_mileage = JCUtil.intToBytes(mileage);
 		// byte[] encrypted_mileage = rsaHandler.encrypt(public_key_rt,
 		// JCUtil.mergeByteArrays(bytes_nonce, bytes_mileage));
 		byte[] encrypted_mileage = rsaHandler
-				.encrypt(car.getPrivateKey(), JCUtil.mergeByteArrays(nonce, bytes_mileage));
+				.encrypt(car.getPrivateKeyInstance(), JCUtil.mergeByteArrays(nonce, bytes_mileage));
 		return encrypted_mileage;
 	}
 

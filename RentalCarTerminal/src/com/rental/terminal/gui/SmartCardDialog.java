@@ -17,7 +17,7 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import com.rental.terminal.model.SmartCardDB;
+import com.rental.terminal.db.SmartCardDB;
 
 public class SmartCardDialog extends Dialog {
 	private class View {

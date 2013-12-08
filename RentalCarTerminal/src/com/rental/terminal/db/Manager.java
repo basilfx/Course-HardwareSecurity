@@ -1,4 +1,4 @@
-package com.rental.terminal.model;
+package com.rental.terminal.db;
 
 import java.sql.SQLException;
 
@@ -12,23 +12,23 @@ public class Manager {
 	
 	private JdbcConnectionSource connection;
 	
-	private Dao<CarDB, Integer> carDao;
+	private Dao<Car, Integer> carDao;
 	private Dao<SmartCardDB, Integer> smartCardDao;
 
 	public Manager() throws SQLException {
 		connection = new JdbcConnectionSource(DATABASE_URL);
 
 		// Setup DAO
-		this.carDao = DaoManager.createDao(connection, CarDB.class);
+		this.carDao = DaoManager.createDao(connection, Car.class);
 		this.smartCardDao = DaoManager.createDao(connection, SmartCardDB.class);
 		
 
         // Setup the table
-        TableUtils.createTableIfNotExists(this.connection, CarDB.class);
+        TableUtils.createTableIfNotExists(this.connection, Car.class);
         TableUtils.createTableIfNotExists(this.connection, SmartCardDB.class);
 	}
 	
-	public Dao<CarDB, Integer> getCarDao() {
+	public Dao<Car, Integer> getCarDao() {
 		return this.carDao;
 	}
 	

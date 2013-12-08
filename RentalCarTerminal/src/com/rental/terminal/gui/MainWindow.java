@@ -42,10 +42,10 @@ import com.rental.terminal.IssuingCommandsHandler;
 import com.rental.terminal.ReceptionCommandsHandler;
 import com.rental.terminal.Smartcard;
 import com.rental.terminal.Terminal;
+import com.rental.terminal.db.Car;
+import com.rental.terminal.db.Manager;
+import com.rental.terminal.db.SmartCardDB;
 import com.rental.terminal.encryption.RSAHandler;
-import com.rental.terminal.model.CarDB;
-import com.rental.terminal.model.Manager;
-import com.rental.terminal.model.SmartCardDB;
 
 
 public class MainWindow {
@@ -475,10 +475,10 @@ public class MainWindow {
 			@Override
 			public void handleEvent(Event arg0) {
 				CarDialog dialog = new CarDialog(view.shell);
-				dialog.setCar(new CarDB());
+				dialog.setCar(new Car());
 				
 				if (dialog.open() == 0) {
-					CarDB car = dialog.getCar();
+					Car car = dialog.getCar();
 					
 					// Save to database
 					try {
@@ -503,7 +503,7 @@ public class MainWindow {
 			@Override
 			public void handleEvent(Event arg0) {
 				java.util.List<Integer> carIds = (java.util.List<Integer>) view.deskCars.getData();
-				CarDB car;
+				Car car;
 				
 				// Determine car ID
 				int index = view.deskCars.getSelectionIndex();
@@ -638,7 +638,7 @@ public class MainWindow {
 				// Retrieve card
 				java.util.List<Integer> carIds = (java.util.List<Integer>) view.deskCars.getData();
 				
-				CarDB car;
+				Car car;
 				SmartCardDB smartCard;
 				Calendar calendar;
 				Smartcard smartCard2 = new Smartcard();
@@ -675,7 +675,7 @@ public class MainWindow {
 					
 					// Invoke init command
 					ReceptionCommandsHandler reception = new ReceptionCommandsHandler(terminal);
-					reception.initCard(smartCard2, car.toCar());
+					reception.initCard(smartCard2, car);
 					
 					view.addLogItem("Card initialized");
 				} catch (Exception e) {
@@ -718,10 +718,10 @@ public class MainWindow {
 				
 				try {
 					CarCommandsHandler carCommands = new CarCommandsHandler(terminal);
-					CarDB car = getCar(view.carCars.getSelectionIndex());
+					Car car = getCar(view.carCars.getSelectionIndex());
 					
 					if (car != null) {
-						carCommands.startCar(car.toCar());
+						carCommands.startCar(car);
 						
 						// Update info
 						car.setStarts(car.getStarts() + 1);
@@ -753,11 +753,11 @@ public class MainWindow {
 				
 				try {
 					CarCommandsHandler carCommands = new CarCommandsHandler(terminal);
-					CarDB car = getCar(view.carCars.getSelectionIndex());
+					Car car = getCar(view.carCars.getSelectionIndex());
 					
 					if (car != null) {
 						carCommands.setMileage(car.getMileage());
-						carCommands.stopCar(car.toCar());
+						carCommands.stopCar(car);
 
 						view.carMileage.setText("Current mileage: --");
 					}
@@ -778,7 +778,7 @@ public class MainWindow {
 				view.carDrive.setEnabled(false);
 				
 				try {
-					CarDB car = getCar(view.carCars.getSelectionIndex());
+					Car car = getCar(view.carCars.getSelectionIndex());
 					
 					if (car != null) {
 						car.setMileage(car.getMileage() + 10);
@@ -799,7 +799,7 @@ public class MainWindow {
 		});
 	}
 	
-	public CarDB getCar(int index) {
+	public Car getCar(int index) {
 		java.util.List<Integer> carIds = (java.util.List<Integer>) view.deskCars.getData();
 
 		if (index == -1) {
@@ -842,7 +842,7 @@ public class MainWindow {
 	}
 
 	public void setupCars() {
-		java.util.List<CarDB> cars;
+		java.util.List<Car> cars;
 		
 		// Query for all
 		try {
@@ -855,7 +855,7 @@ public class MainWindow {
 		// Add to the list
 		java.util.List<Integer> carIds = Lists.newArrayList();
 		
-		for (CarDB car : cars) {
+		for (Car car : cars) {
 			this.view.deskCars.add(car.getName());
 			this.view.carCars.add(car.getName());
 			carIds.add(car.getId());
@@ -932,5 +932,14 @@ public class MainWindow {
 	    
 	    // Done
 		System.exit(0);
+	}
+	
+	/**
+	 * Main method to initiate the GUI
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		// Open the main window
+		new MainWindow();
 	}
 }

@@ -1,4 +1,4 @@
-package com.rental.terminal.model;
+package com.rental.terminal.db;
 
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.field.ForeignCollectionField;
@@ -17,7 +17,7 @@ public class SmartCardDB {
 	private String publicKey;
 	
 	@DatabaseField(canBeNull = true, foreign = true)
-	private CarDB car;
+	private Car car;
 
 	//Getters and Setters
 	public String getPublicKey() {
@@ -36,11 +36,11 @@ public class SmartCardDB {
 		this.publicKey = publicKey;
 	}
 
-	public CarDB getCar() {
+	public Car getCar() {
 		return car;
 	}
 
-	public void setCar(CarDB car) {
+	public void setCar(Car car) {
 		this.car = car;
 	}
 	

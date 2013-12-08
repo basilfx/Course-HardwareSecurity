@@ -5,9 +5,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Calendar;
 
-import javax.smartcardio.CardException;
-
+import com.rental.terminal.db.Car;
 import com.rental.terminal.encryption.RSAHandler;
 
 
@@ -82,15 +82,9 @@ public class ProtocolDemo {
 			
 			Car car = new Car();
 			car.setId((short)34);
-			RSAPublicKey public_key_ct = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_ct");
-			car.setPublicKey(public_key_ct);
-			RSAPrivateKey private_key_ct = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_ct");
-			car.setPrivateKey(private_key_ct);
-			byte[] date = new byte[3];
-			date[0] = 2;
-			date[1] = 11;
-			date[2] = 13;
-			car.setDate(date);
+			car.setPublicKey("keys/public_key_ct");
+			car.setPrivateKey("keys/private_key_ct");
+			car.setDate(Calendar.getInstance());
 			
 			receptionCommands.initCard(smartcard, car);
 			
