@@ -1,0 +1,174 @@
+free net, net2, RT, SC, CT, init, start, stopcar, readme.
+
+private free caridanddate, secret.
+
+fun pubkey/1.
+private fun privkey/1.
+fun pencrypt/2.
+fun psign/2.
+
+reduc pdecrypt(pencrypt(x,pubkey(k)),privkey(k)) = x.
+reduc checksign(psign(x,privkey(k)),pubkey(k)) = x.
+
+query attacker : secret.
+(*
+Phases:
+Init phase: 1, SC is at the RT
+Thereafter: 2, SC is at the costumer
+Read mileage: 3, SC is at the RT again(to distinguish finding secret at channels mileageatstart and finalmileage)
+*)
+
+let initializer = 	new sc_id;
+					(* certificate = {|sc_id,pubkey_sc|}privkey_rt *)
+					let certificate = psign((sc_id, pubkey(SC)),privkey(RT)) in
+						(* certificate of sc known to everyone *)
+						out(net,certificate);
+						(* allow the attacker to have a valid encrypted and signed mileage, to check if he can replay them *)
+						new N1;
+						out(net,(pencrypt(psign(N1,privkey(CT)),pubkey(RT)))).
+
+let RTProcess =		(* INIT PHASE *)
+					phase 1;
+					(* RT -> SC: init *)
+					out(net, init);
+					(* certificate = {|sc_id,pubkey_sc|}privkey_rt *)
+					(* SC -> RT: certificate *)
+					!in(net,x);
+					let (sc_id, pubkey_sc) = checksign(x,pubkey(RT)) in
+						new N1;
+						(* RT -> SC: {|{|N1|}privkey_rt|}pubkey_sc *)
+						out(net,pencrypt(psign(N1,privkey(RT)),pubkey_sc));
+						(* SC -> RT: N1 *)
+						!in(net,=N1);
+						(* SC -> RT: {|{|N2|}privkey_sc|}pubkey_rt *)
+						!in(net,y);
+						let N2 = checksign(pdecrypt(y, privkey(RT)),pubkey(SC)) in
+							(* RT -> SC: N2 *)
+							out(net,N2);
+							(* RT -> SC: {|pubkey_ct|}privkey_rt *)
+							out(net,psign(pubkey(CT),privkey(RT)));
+							new N3;
+							(* carkey = {|{|caridanddate,sc_id,N3|}privkey_rt|}pubkey_ct *)
+							let carkey = pencrypt(psign((caridanddate,sc_id,N3),privkey(RT)),pubkey(CT)) in
+								(* RT -> SC: {|carkey|}pubkey_sc *)
+								out(net, pencrypt(carkey,pubkey_sc));
+								
+								(* READ MILEAGE PHASE *)
+								phase 3;
+								(* RT -> SC: readme *)
+								out(net, readme);
+								(* SC -> RT: {|sc_id,pubkey_sc|}privkey_rt *)
+								in(net,certificate);
+								let(sc_id2,pubkey_sc2) = checksign(certificate,pubkey(RT)) in
+									(* RT -> SC: {|{|N|}privkey_rt|}pubkey_sc *)
+									new N4;
+									out(net,pencrypt(psign(N4,privkey(RT)),pubkey_sc2));
+									(* SC -> RT: N, {|{|mileage_at_start|}privkey_rt|}pubkey_ct *)
+									in(net,mileages);
+									let (=N4, startmileageencrypted, finalmileageencrypted) = mileages in
+										let startmileage = checksign(pdecrypt(startmileageencrypted,privkey(RT)),pubkey(CT)) in
+											let finalmileage = checksign(pdecrypt(finalmileageencrypted,privkey(RT)),pubkey(CT)) in
+												(* Check if attacker could have made the mileages *)
+												out(startmileage,secret);
+												out(finalmileage,secret).
+									
+							
+let SCProcess =		(* INIT PHASE *)
+					phase 1;
+					(* certificate = {|sc_id,pubkey_sc|}privkey_rt *)
+					in(net, certificate);
+					let (sc_id,pubkey_sc) = checksign(certificate,pubkey(RT)) in
+						(* RT -> SC: init *)
+						!in(net,=init);
+						(* SC -> RT: certificate *)
+						out(net,certificate);
+						(* RT -> SC: {|{|N1|}privkey_rt|}pubkey_sc *)
+						!in(net,x);
+						let N1 = checksign(pdecrypt(x, privkey(SC)),pubkey(RT)) in
+							(* SC -> RT: N1 *)
+							out(net,N1);
+							new N2;
+							(* SC -> RT: {|{|N2|}privkey_sc|}pubkey_rt *)
+							out(net,pencrypt(psign(N2,privkey(SC)),pubkey(RT)));
+							(* RT -> SC: N2 *)
+							!in(net,=N2);
+							(* RT -> SC: {|pubkey_ct|}privkey_rt *)
+							!in(net,y);
+							let pubkey_ct = checksign(y,pubkey(RT)) in
+								(* RT -> SC: {|carkey|}pubkey_sc *)
+								!in(net,z);
+								(* carkey = {|{|caridanddate,sc_id,N0|}privkey_rt|}pubkey_ct *)
+								let carkey = pdecrypt(z,privkey(SC)) in
+								
+									(* START CAR PHASE *)
+									phase 2;
+									(* CT -> SC: start *)
+									!in(net2,=start);
+									(* SC -> CT: certificate *)
+									out(net2,certificate);
+									(* CT -> SC: {|{|N1, {|{|mileage_at-start|}privkey_ct|}pubkey_rt|}privkey_ct|}pubkey_sc *)
+									in(net2,encryptandsignedmileage);
+									let signedmileage = pdecrypt(encryptandsignedmileage,privkey(SC)) in
+										let (N3,mileageatstart) = checksign(signedmileage,pubkey(CT)) in
+											(* SC -> CT: {|N3,carkey|}pubkey_ct *)
+											out(net2,pencrypt((N3,carkey),pubkey(CT)));
+											(* Check if the smart card accepts bad mileages *)
+											out(mileageatstart,secret);
+											
+											(* STOP CAR PHASE *)
+											(* CT -> SC: stop *)
+											in(net2,=stopcar);
+											(* SC -> CT: N, sc_id *)
+											new N4;
+											out(net2,(N4,sc_id));
+											(* CT -> SC: {|{|N, {|{|final_mileage|}privkey_ct|}pubkey_rt|}privkey_ct|}pubkey_sc *)
+											in(net2,encryptedsignedfinalmileage);
+											let (=N3, encryptedfinalmileage) = checksign(pdecrypt(encryptedsignedfinalmileage,privkey(SC)),pubkey(CT)) in
+												(* Check if the smart card accepts bad mileages: in that case the SC would unset the start_flag, which is incorrect. *)
+												out(encryptedfinalmileage,secret);
+												
+												(* READ MILEAGE PHASE *)
+												phase 3;
+												(* RT -> SC: readme *)
+												in(net,readme);
+												(* SC -> RT: {|sc_id,pubkey_sc|}privkey_rt *)
+												out(net,certificate);
+												(* RT -> SC: {|{|N|}privkey_rt|}pubkey_sc *)
+												in(net, encryptedsignednonce);
+												let N5 = checksign(pdecrypt(encryptedsignednonce,privkey(SC)),pubkey(RT)) in
+													out(net,(N5,mileageatstart,encryptedfinalmileage)).
+
+let CTProcess =		(* START CAR PHASE *)
+					phase 2;
+					(* CT -> SC: start *)
+					out(net2,start);
+					(* SC -> CT: certificate *)
+					!in(net2,x);
+					(* certificate = {|sc_id,pubkey_sc|}privkey_rt *)
+					let (sc_id,pubkey_sc) = checksign(x,pubkey(RT)) in
+						(* CT -> SC: {|{|N1, {|{|mileage_at-start|}privkey_ct|}pubkey_rt|}privkey_ct|}pubkey_sc *)
+						new N1;
+						new mileage_at_start;
+						out(net2,pencrypt(psign((N1,pencrypt(psign(mileage_at_start,privkey(CT)),pubkey(RT))),privkey(CT)),pubkey_sc));
+						(* SC -> CT: {|N1,carkey|}pubkey_ct *)
+						!in(net2,y);
+						let (=N1,signedandencryptedcarkey) = pdecrypt(y,privkey(CT)) in
+							(* carkey = {|{|caridanddate,sc_id,N3|}privkey_rt|}pubkey_ct *)
+							let signedcarkey = pdecrypt(signedandencryptedcarkey,privkey(CT)) in
+								let (caridanddate,=sc_id,N3) = checksign(signedcarkey,pubkey(RT)) in
+									(*the attacker has made an accepting (correct) key if he knows this channel*)	
+									out(caridanddate,secret); 
+									
+									(* STOP CAR PHASE *)
+									(* CT -> SC: stop *)
+									out(net2,stopcar);
+									(* SC -> CT: N, sc_id *)
+									in(net2,(N3,=sc_id));
+									(* CT -> SC: {|{|N, {|{|final_mileage|}privkey_ct|}pubkey_rt|}privkey_ct|}pubkey_sc *)
+									new finalmileage;
+									out(net2,pencrypt(psign((N3,pencrypt(psign(final_mileage,privkey(RT)),pubkey(RT))),privkey(CT)),pubkey(SC))).
+									
+
+process initializer | !RTProcess | !SCProcess | !CTProcess  
+					(* Check if we build a decryption oracle somewhere *)
+					| out(net, pencrypt(secret,pubkey(CT))) | out(net, pencrypt(secret,pubkey(RT))) | out(net, pencrypt(secret,pubkey(SC)))
