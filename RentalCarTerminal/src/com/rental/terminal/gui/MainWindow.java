@@ -653,6 +653,8 @@ public class MainWindow {
 						
 						// Update car
 						car.setDate(calendar);
+						car.setStarts(0);
+						car.setIssuedMileage(car.getMileage());
 						manager.getCarDao().update(car);
 						
 						// Invoke init command
@@ -679,12 +681,38 @@ public class MainWindow {
 				view.deskRead.setEnabled(false);
 				
 				try {
+					Smartcard smartcard = new Smartcard();
+					Car car = view.deskCars.getSelected();
+					
 					// Make sure card reader is connected
 					if (!terminal.isCardPresent()) {
 						view.addLogItem("No card present");
 						return;
 					}
 					
+					// Read smartcard ID
+					try {
+						new BaseCommandsHandler(terminal).getKeys(smartcard);	
+						
+						// Read ID into object, then read smartcard from DB
+						try {
+							smartcard = manager.getSmartCardDao().queryForEq("cardId", smartcard.getCardId()).get(0);
+						} catch (ArrayIndexOutOfBoundsException e) {
+							view.addLogItem("Smartcard with card ID " + smartcard.getCardId() + " not found!");
+							return;
+						}
+						
+						// Invoke read command
+						new ReceptionCommandsHandler(terminal).read(smartcard, car);
+						
+						int distance = car.getMileage() - car.getStartMileage();
+						view.addLogItem(String.format("Car drove %d KM", distance));
+					} catch (Exception e) {
+						view.addLogItem("Failed initializing card");
+						LOGGER.log(Level.SEVERE, "Exception", e);
+						
+						return;
+					}
 				} finally {
 					view.deskRead.setEnabled(true);
 				}
@@ -713,6 +741,7 @@ public class MainWindow {
 					} catch (Exception e) {
 						view.addLogItem("Card reset failed");
 						LOGGER.log(Level.SEVERE, "Exception", e);
+						return;
 					}
 				} finally {				
 					view.deskReset.setEnabled(true);
@@ -767,13 +796,15 @@ public class MainWindow {
 							car.setStarts(car.getStarts() + 1);
 							
 							if (car.getStarts() == 1) {
+								view.addLogItem("Car first started");
 								car.setStartMileage(car.getStartMileage());
 							}
 							
-							view.carMileage.setText("Current mileage: " + car.getMileage());
-							
 							// Store in database;
 							manager.getCarDao().update(car);
+							
+							// Update view
+							view.carMileage.setText("Current mileage: " + car.getMileage());
 						}
 					} catch (CarTerminalInvalidCarIdException e) {
 						view.addLogItem("The card is not registered for this car.");
@@ -816,7 +847,11 @@ public class MainWindow {
 							
 							carCommands.setMileage(car.getMileage());
 							carCommands.stopCar(car);
-	
+							
+							// Save car
+							manager.getCarDao().update(car);
+							
+							// Update GUI
 							view.carMileage.setText("Current mileage: --");
 						}
 					} catch (Exception e) {
@@ -867,7 +902,7 @@ public class MainWindow {
 				}
 				
 				// Done
-				view.addLogItem("Increaded mileage");
+				view.addLogItem("Increased mileage");
 			}
 		});
 	}

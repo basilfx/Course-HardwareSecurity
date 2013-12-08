@@ -37,6 +37,9 @@ public class Car {
 	private Calendar date;
 
 	@DatabaseField(canBeNull = true)
+	private int issuedMileage;
+	
+	@DatabaseField(canBeNull = true)
 	private int startMileage;
 	
 	@DatabaseField(canBeNull = true)
@@ -119,5 +122,13 @@ public class Car {
 	
 	public String toString() {
 		return String.format("%s (%d KM)", this.name, this.mileage);
+	}
+
+	public int getIssuedMileage() {
+		return issuedMileage;
+	}
+
+	public void setIssuedMileage(int issuedMileage) {
+		this.issuedMileage = issuedMileage;
 	}
 }
