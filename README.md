@@ -12,7 +12,7 @@ This project contains the source for the Hardware Security project, a car rental
 ## Installation
 
 * Clone this repository
-* For both Rental* folders, import the source in Eclipse.
+* For both Rental* folders, import the source in Eclipse. The RentalCarTerminal project is a normal Java 1.6 project, the RentalCarApplet a JavaCard project.
 * For the RentalCarTerminal, add the JUnit 4 library and all JARs under the `lib/` folder.
 * For the RentalCarApplet, set the applets AID. The First AID is `01 02 03 04 05 06 06`, the sub AID is `01 02 03 04 05 06 06 01`
 
