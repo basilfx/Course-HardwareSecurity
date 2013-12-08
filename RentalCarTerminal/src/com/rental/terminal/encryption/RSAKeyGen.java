@@ -1,11 +1,12 @@
 package com.rental.terminal.encryption;
 
-import java.io.*;
-import java.math.BigInteger;
-
-import java.security.*;
-import java.security.spec.*;
-import java.security.interfaces.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.security.Key;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 
 /**
  * Generate an RSA public/private keypair.

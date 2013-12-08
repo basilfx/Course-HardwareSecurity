@@ -3,7 +3,6 @@ package com.rental.terminal.gui;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -161,7 +160,7 @@ public class MainWindow {
 			smartCardSelectGroup.setText("Select smartcard");
 		    
 		    // Smartcard selector
-			this.setupSmartcard = new TypedCombo(smartCardSelectGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
+			this.setupSmartcard = new TypedCombo<Smartcard>(smartCardSelectGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
 			this.setupSmartcard.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 			
 			this.setupAddSmartcard = new Button(smartCardSelectGroup, SWT.None);
@@ -262,7 +261,7 @@ public class MainWindow {
 			carActionsGroup.setText("Actions");
 			
 			// Car selector
-			this.carCars = new TypedCombo(carActionsGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
+			this.carCars = new TypedCombo<Car>(carActionsGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
 			this.carCars.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 			
 			// Stop button

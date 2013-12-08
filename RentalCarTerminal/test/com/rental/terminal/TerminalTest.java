@@ -4,7 +4,6 @@ package com.rental.terminal;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -16,8 +15,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.rental.terminal.CardUtils;
-import com.rental.terminal.Terminal;
 import com.rental.terminal.commands.CarCommandsHandler;
 import com.rental.terminal.commands.IssuingCommandsHandler;
 import com.rental.terminal.commands.ReceptionCommandsHandler;

@@ -11,8 +11,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.rental.terminal.CardUtils;
-
 
 public class JCUtilTest {
 	

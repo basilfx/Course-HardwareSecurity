@@ -8,7 +8,6 @@ import java.security.spec.InvalidKeySpecException;
 
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
-import com.j256.ormlite.field.ForeignCollectionField;
 import com.j256.ormlite.table.DatabaseTable;
 import com.rental.terminal.encryption.RSAHandler;
 

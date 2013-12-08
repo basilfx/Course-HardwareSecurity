@@ -15,7 +15,8 @@ import javax.smartcardio.TerminalFactory;
 /**
  * Base class for the Terminal applications.
  * 
- * @author Jelte & Erwin.
+ * @author Erwin Middelesch
+ * @author Jelte Orij
  */
 public class Terminal {
 	protected static final byte[] APPLET_AID = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x01 };

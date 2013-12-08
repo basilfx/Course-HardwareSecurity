@@ -3,9 +3,6 @@ package org.eclipse.swt.widgets;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.swt.widgets.Combo;
-import org.eclipse.swt.widgets.Composite;
-
 import com.google.common.collect.Lists;
 
 /**
