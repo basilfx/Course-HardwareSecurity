@@ -7,7 +7,6 @@ import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import com.j256.ormlite.table.TableUtils;
 import com.rental.terminal.model.CarDB;
-import com.rental.terminal.model.CustomerDB;
 import com.rental.terminal.model.SmartCardDB;
 
 public class Manager {
@@ -17,7 +16,6 @@ public class Manager {
 	
 	private Dao<CarDB, Integer> carDao;
 	private Dao<SmartCardDB, Integer> smartCardDao;
-	private Dao<CustomerDB, Integer> customerDao;
 
 	public Manager() throws SQLException {
 		connection = new JdbcConnectionSource(DATABASE_URL);
@@ -25,13 +23,11 @@ public class Manager {
 		// Setup DAO
 		this.carDao = DaoManager.createDao(connection, CarDB.class);
 		this.smartCardDao = DaoManager.createDao(connection, SmartCardDB.class);
-		this.customerDao = DaoManager.createDao(connection, CustomerDB.class);
 		
 
         // Setup the table
         TableUtils.createTableIfNotExists(this.connection, CarDB.class);
         TableUtils.createTableIfNotExists(this.connection, SmartCardDB.class);
-        TableUtils.createTableIfNotExists(this.connection, CustomerDB.class);
 	}
 	
 	public Dao<CarDB, Integer> getCarDao() {
@@ -40,9 +36,5 @@ public class Manager {
 	
 	public Dao<SmartCardDB, Integer> getSmartCardDao() {
 		return this.smartCardDao;
-	}
-	
-	public Dao<CustomerDB, Integer> getCustomerDao() {
-		return this.customerDao;
 	}
 }

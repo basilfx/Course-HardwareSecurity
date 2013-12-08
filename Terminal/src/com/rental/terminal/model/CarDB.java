@@ -35,7 +35,10 @@ public class CarDB {
 	private int startMileage;
 	
 	@DatabaseField(canBeNull = true)
-	private int finalMileage;
+	private int mileage;
+	
+	@DatabaseField(canBeNull = true)
+	private int starts;
 
 	public int getId() {
 		return id;
@@ -85,12 +88,20 @@ public class CarDB {
 		this.startMileage = startMileage;
 	}
 
-	public int getFinalMileage() {
-		return finalMileage;
+	public int getMileage() {
+		return mileage;
 	}
 
-	public void setFinalMileage(int finalMileage) {
-		this.finalMileage = finalMileage;
+	public void setMileage(int mileage) {
+		this.mileage = mileage;
+	}
+	
+	public int getStarts() {
+		return starts;
+	}
+
+	public void setStarts(int starts) {
+		this.starts = starts;
 	}
 
 	public Car toCar() throws Exception {
@@ -99,7 +110,7 @@ public class CarDB {
 		car.setId((short) this.id);
 		car.setDate(this.date != null ? JCUtil.dateToBytes(this.date) : null);
 		car.setStartMileage(this.startMileage);
-		car.setFinalMileage(this.finalMileage);
+		car.setFinalMileage(this.mileage);
 		
 		RSAHandler rsaHandler = new RSAHandler();
 

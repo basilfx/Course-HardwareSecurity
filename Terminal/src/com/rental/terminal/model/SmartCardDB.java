@@ -18,9 +18,6 @@ public class SmartCardDB {
 	
 	@DatabaseField(canBeNull = true, foreign = true)
 	private CarDB car;
-	
-	@DatabaseField(canBeNull = true, foreign = true)
-	private CustomerDB customer;
 
 	//Getters and Setters
 	public String getPublicKey() {
@@ -45,14 +42,6 @@ public class SmartCardDB {
 
 	public void setCar(CarDB car) {
 		this.car = car;
-	}
-
-	public CustomerDB getCustomer() {
-		return customer;
-	}
-
-	public void setCustomer(CustomerDB customer) {
-		this.customer = customer;
 	}
 	
 	public Short getCardId() {

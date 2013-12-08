@@ -44,7 +44,6 @@ import terminal.Terminal;
 import com.google.common.collect.Lists;
 import com.rental.terminal.db.Manager;
 import com.rental.terminal.model.CarDB;
-import com.rental.terminal.model.CustomerDB;
 import com.rental.terminal.model.SmartCardDB;
 
 import encryption.RSAHandler;
@@ -86,28 +85,13 @@ public class MainWindow {
 		private Button deskDeleteCar;
 		private Text deskDate;
 		
-		private Combo deskCustomers;
-		private Button deskAddCustomer;
-		private Button deskEditCustomer;
-		private Button deskDeleteCustomer;
-		
 		private Button carStart;
 		private Button carStop;
 		private Button carDrive;
 		private Combo carCars;
 		private Label carMileage;
 		
-		public View() {
-			//
-			// General
-			//
-			Listener buttonListener = new Listener(){
-				@Override
-				public void handleEvent(Event e) {
-					addLogItem("Button '" + ((Button)e.widget).getText() + "' pressed");
-				}
-			};
-			
+		public View() {			
 			//
 			// Window
 			//
@@ -200,8 +184,7 @@ public class MainWindow {
 		    this.setupIssue = new Button(setupActionsGroup, SWT.PUSH);
 		    
 		    this.setupIssue.setText("Issue card");
-		    this.setupIssue.addListener(SWT.Selection, buttonListener);
-			
+		    
 			//
 			// Desk terminal tab
 			//
@@ -230,27 +213,7 @@ public class MainWindow {
 			
 			this.deskDeleteCar = new Button(carSelectGroup, SWT.None);
 			this.deskDeleteCar.setText("Delete");
-			
-			// Add/edit
-			Group customerSelectGroup = new Group(deskForm, SWT.NONE);
-			customerSelectGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-			customerSelectGroup.setLayout(new GridLayout(4, false));
-			customerSelectGroup.setText("Select customer");
-		    
-		    // Customer selector
-			this.deskCustomers = new Combo(customerSelectGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
-			this.deskCustomers.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-			
-			// Add/edit and delete buttons for customer
-			this.deskAddCustomer = new Button(customerSelectGroup, SWT.None);
-			this.deskAddCustomer.setText("Add");
-			
-			this.deskEditCustomer = new Button(customerSelectGroup, SWT.None);
-			this.deskEditCustomer.setText("Edit");
-			
-			this.deskDeleteCustomer = new Button(customerSelectGroup, SWT.None);
-			this.deskDeleteCustomer.setText("Delete");
-			
+		
 			// Date selector
 			Group deskPeriodGroup = new Group(deskForm, SWT.NONE);
 			deskPeriodGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
@@ -274,13 +237,11 @@ public class MainWindow {
 		    this.deskInit = new Button(deskActionsGroup, SWT.None);
 		    
 		    this.deskInit.setText("Init card");
-		    this.deskInit.addListener(SWT.Selection, buttonListener);
 			
 			// Reset button
 		    this.deskReset = new Button(deskActionsGroup, SWT.None);
 		    
 		    this.deskReset.setText("Reset card");
-		    this.deskReset.addListener(SWT.Selection, buttonListener);
 		    
 			//
 			// Car terminal tab
@@ -303,21 +264,15 @@ public class MainWindow {
 			
 			// Stop button
 			this.carStart = new Button(carActionsGroup, SWT.None);
-			
 			this.carStart.setText("Start car");
-			this.carStart.addListener(SWT.Selection, buttonListener);
 			
 			// Stop button
 			this.carStop = new Button(carActionsGroup, SWT.None);
-			
 			this.carStop.setText("Stop car");
-			this.carStop.addListener(SWT.Selection, buttonListener);
 			
 			// Stop button
 			this.carDrive = new Button(carActionsGroup, SWT.None);
-			
 			this.carDrive.setText("Drive 10KM");
-			this.carDrive.addListener(SWT.Selection, buttonListener);
 			
 			// Mileage label
 			this.carMileage = new Label(carActionsGroup, SWT.None);
@@ -403,22 +358,7 @@ public class MainWindow {
 	/**
 	 * 
 	 */
-	public void setupButtons() {
-		SelectionListener buttonEnabler = new SelectionListener() {
-			@Override
-			public void widgetSelected(SelectionEvent arg0) {
-				view.deskInit.setEnabled(
-					view.deskCars.getSelectionIndex() != -1 && view.deskCustomers.getSelectionIndex() != -1
-				);
-			}
-			
-			@Override
-			public void widgetDefaultSelected(SelectionEvent arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-		};
-		
+	public void setupButtons() {		
 		//
 		// Smart card
 		//
@@ -529,8 +469,6 @@ public class MainWindow {
 		//
 		// Cars
 		//
-		this.view.deskCars.addSelectionListener(buttonEnabler);
-		this.view.deskCustomers.addSelectionListener(buttonEnabler);
 		
 		// Add car button
 		this.view.deskAddCar.addListener(SWT.Selection, new Listener() {
@@ -635,113 +573,6 @@ public class MainWindow {
 				carIds.remove(index);
 				view.deskCars.remove(index);
 				view.carCars.remove(index);
-			}
-		});
-		
-		//
-		// Customers
-		//
-		
-		// Add customer button
-		this.view.deskAddCustomer.addListener(SWT.Selection, new Listener() {
-			@Override
-			public void handleEvent(Event arg0) {
-				CustomerDialog dialog = new CustomerDialog(view.shell);
-				dialog.setCustomer(new CustomerDB());
-				
-				if (dialog.open() == 0) {
-					CustomerDB customer = dialog.getCustomer();
-					
-					// Save to database
-					try {
-						MainWindow.this.manager.getCustomerDao().create(customer);
-					} catch (SQLException e) {
-						LOGGER.log(Level.SEVERE, "Exception", e);
-						return;
-					}
-					
-					// Update GUI
-					MainWindow.this.view.addLogItem("Added customer with ID " + customer.getId());
-					
-					view.deskCustomers.add(customer.getName());
-					((java.util.List<Integer>) view.deskCustomers.getData()).add(customer.getId());
-				}
-			}
-		});
-		
-		// Edit customer button
-		this.view.deskEditCustomer.addListener(SWT.Selection, new Listener() {
-			@Override
-			public void handleEvent(Event arg0) {
-				java.util.List<Integer> customerIds = (java.util.List<Integer>) view.deskCustomers.getData();
-				CustomerDB customer;
-				
-				// Determine car ID
-				int index = view.deskCustomers.getSelectionIndex();
-				
-				if (index == -1) {
-					return;
-				}
-				
-				int id = customerIds.get(index);
-				
-				// Find car
-				try {
-					customer = manager.getCustomerDao().queryForId(id);
-				} catch (SQLException e) {
-					LOGGER.log(Level.SEVERE, "Exception", e);
-					return;
-				}
-				
-				// Display dialog
-				CustomerDialog dialog = new CustomerDialog(view.shell);
-				dialog.setCustomer(customer);
-				
-				if (dialog.open() == 0) {
-					customer = dialog.getCustomer();
-					
-					try {
-						MainWindow.this.manager.getCustomerDao().update(customer);						
-					} catch (SQLException e) {
-						LOGGER.log(Level.SEVERE, "Exception", e);
-						return;
-					}
-					
-					// Update GUI
-					view.addLogItem("Edited customer with ID " + customer.getId());
-					view.deskCustomers.setItem(index, customer.getName());
-				}
-			}
-		});
-		
-		// Delete customer button
-		this.view.deskDeleteCustomer.addListener(SWT.Selection, new Listener() {
-			@Override
-			public void handleEvent(Event arg0) {
-				java.util.List<Integer> customerIds = (java.util.List<Integer>) view.deskCustomers.getData();
-				
-				// Determine car ID
-				int index = view.deskCustomers.getSelectionIndex();
-				
-				if (index == -1) {
-					return;
-				}
-				
-				int id = customerIds.get(index);
-				
-				// Find car
-				try {
-					manager.getCustomerDao().deleteById(id);
-				} catch (SQLException e) {
-					LOGGER.log(Level.SEVERE, "Exception", e);
-					return;
-				}
-
-				// Update GUI
-				view.addLogItem("Deleted customer with ID " + id);
-				
-				customerIds.remove(index);
-				view.deskCustomers.remove(index);
 			}
 		});
 		
@@ -859,6 +690,26 @@ public class MainWindow {
 			}
 		});
 		
+		// Reset button
+		this.view.deskReset.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event arg0) {
+				view.deskReset.setEnabled(false);
+				
+				// Reset card
+				try {
+					new ReceptionCommandsHandler(terminal).reset();
+					
+					view.addLogItem("Card reset succesfully");
+				} catch (Exception e) {
+					view.addLogItem("Card reset failed");
+					LOGGER.log(Level.SEVERE, "Exception", e);
+				}
+				
+				view.deskReset.setEnabled(true);
+			}
+		});
+		
 		// Car start button
 		view.carStart.addListener(SWT.Selection, new Listener() {
 			@Override
@@ -871,12 +722,23 @@ public class MainWindow {
 					
 					if (car != null) {
 						carCommands.startCar(car.toCar());
+						
+						// Update info
+						car.setStarts(car.getStarts() + 1);
+						
+						if (car.getStarts() == 1) {
+							car.setStartMileage(car.getStartMileage());
+						}
+						
+						view.carMileage.setText("Current mileage: " + car.getMileage());
+						
+						// Store in database;
+						manager.getCarDao().update(car);
 					}
 				} catch (Exception e) {
 					view.addLogItem("Failed starting car");
 					
 					LOGGER.log(Level.SEVERE, "Exception", e);
-					return;
 				}
 				
 				view.carStart.setEnabled(true);
@@ -894,13 +756,15 @@ public class MainWindow {
 					CarDB car = getCar(view.carCars.getSelectionIndex());
 					
 					if (car != null) {
+						carCommands.setMileage(car.getMileage());
 						carCommands.stopCar(car.toCar());
+
+						view.carMileage.setText("Current mileage: --");
 					}
 				} catch (Exception e) {
 					view.addLogItem("Failed stopping car");
 					
 					LOGGER.log(Level.SEVERE, "Exception", e);
-					return;
 				}
 				
 				view.carStop.setEnabled(true);
@@ -914,18 +778,20 @@ public class MainWindow {
 				view.carDrive.setEnabled(false);
 				
 				try {
-					CarCommandsHandler carCommands = new CarCommandsHandler(terminal);
 					CarDB car = getCar(view.carCars.getSelectionIndex());
 					
 					if (car != null) {
-						carCommands.setMileage(carCommands.getMileage() + 10);
-						view.carMileage.setText("Current mileage: " + carCommands.getMileage());
+						car.setMileage(car.getMileage() + 10);
+						manager.getCarDao().update(car);
+						
+						view.carMileage.setText("Current mileage: " + car.getMileage());
+						
+						view.addLogItem("Increaded mileage");
 					}
 				} catch (Exception e) {
 					view.addLogItem("Failed increasing mileage");
 					
 					LOGGER.log(Level.SEVERE, "Exception", e);
-					return;
 				}
 				
 				view.carDrive.setEnabled(true);
@@ -974,31 +840,7 @@ public class MainWindow {
 		// Save IDs
 		this.view.setupSmartcard.setData(smartCardIds);
 	}
-	
-	public void setupCustomers() {
-		java.util.List<CustomerDB> customers;
-		
-		// Query for all
-		try {
-			customers = this.manager.getCustomerDao().queryForAll();
-		} catch (SQLException e) {
-			LOGGER.log(Level.SEVERE, "Exception", e);
-			return;
-		}
-		
-		// Add to the list
-		java.util.List<Integer> customerIds = Lists.newArrayList();
-		
-		for (CustomerDB customer : customers) {
-			this.view.deskCustomers.add(customer.getName());
-			//this.view.carCars.add(car.getName());
-			customerIds.add(customer.getId());
-		}
-		
-		// Save IDs
-		this.view.deskCustomers.setData(customerIds);
-	}
-	
+
 	public void setupCars() {
 		java.util.List<CarDB> cars;
 		
@@ -1049,7 +891,6 @@ public class MainWindow {
 		
 		this.setupButtons();
 		this.setupSmartCards();
-		this.setupCustomers();
 		this.setupCars();
 		
 		// Notify ready

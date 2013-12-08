@@ -202,14 +202,14 @@ public class CarCommandsHandler extends BaseCommandsHandler {
 			byte[] nonce = JCUtil.subArray(nonce_and_car_data, 0, NONCESIZE);
 		
 			byte[] car_data = JCUtil.subArray(nonce_and_car_data, NONCESIZE, BLOCKSIZE);
-			/**
+			
 			// Decrypt encrypted car data.
 			byte[] data = rsaHandler.decrypt(public_key_rt, car_data);
 
-			short decrypted_car_id = JCUtil.bytesToShort(car_data[0], car_data[1]);
-			short day = car_data[2];
-			short month = car_data[3];
-			short year = car_data[4];
+			short decrypted_car_id = JCUtil.bytesToShort(data[0], data[1]);
+			short day = data[2];
+			short month = data[3];
+			short year = data[4];
 
 			System.out.println("car ID from terminal: " + car.getId());
 			System.out.println("car ID from SC: " + decrypted_car_id);
@@ -223,7 +223,7 @@ public class CarCommandsHandler extends BaseCommandsHandler {
 				//<= Calendar.DAY_OF_MONTH || month != Calendar.MONTH + 1 || year != Calendar.YEAR
 				throw new CarTerminalInvalidDateException();
 			}
-			*/
+			
 			return nonce;
 		} catch (Exception e) {
 			e.printStackTrace();
