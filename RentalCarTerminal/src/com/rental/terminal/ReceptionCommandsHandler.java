@@ -15,6 +15,7 @@ import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
 import com.rental.terminal.db.Car;
+import com.rental.terminal.db.Smartcard;
 import com.rental.terminal.encryption.RSAHandler;
 
 
@@ -109,11 +110,11 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			
 			
 			// RT -> SC: {|pubkey_ct|}privkey_rt			
-			byte[] car_public_key_modulus = JCUtil.getBytes(car.getPublicKeyInstance().getModulus());
+			byte[] car_public_key_modulus = JCUtil.getBytes(car.getPublicKey().getModulus());
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_CAR_KEY_MODULUS, (byte) 0, (byte) 0, car_public_key_modulus);
 			terminal.sendCommandAPDU(capdu);
 			
-			byte[] car_public_key_exponent = JCUtil.getBytes(car.getPublicKeyInstance().getPublicExponent());
+			byte[] car_public_key_exponent = JCUtil.getBytes(car.getPublicKey().getPublicExponent());
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_CAR_KEY_EXPONENT, (byte) 0, (byte) 0, car_public_key_exponent);
 			terminal.sendCommandAPDU(capdu);
 			
@@ -206,7 +207,7 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 	 * @throws InvalidKeySpecException 
 	 */
 	private int verifyAndReturnMileage(Car car, byte[] data) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeySpecException{
-		byte[] decrypted_data = rsaHandler.decrypt(car.getPublicKeyInstance(),data);
+		byte[] decrypted_data = rsaHandler.decrypt(car.getPublicKey(),data);
 		
 		byte[] nonce = JCUtil.subArray(decrypted_data, 0, NONCESIZE);
 		byte[] mileage = JCUtil.subArray(decrypted_data, NONCESIZE, MILEAGESIZE);

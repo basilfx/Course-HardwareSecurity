@@ -1,14 +1,23 @@
 package com.rental.terminal;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Calendar;
-import java.util.Date;
+
+import com.rental.terminal.encryption.RSAHandler;
 
 /**
- * @author Jelte & Erwin.
- *
+ * @author Jelte Orij
+ * @author Erwin Middelesch
+ * @author Bas Stottelaar
  */
 public class JCUtil {
 	
@@ -123,7 +132,7 @@ public class JCUtil {
 
 	/**
 	 * Convert a Calendar instance to a byte array, as expected by the protocol.
-	 * The format is DAY, MONTH and YEAR.
+	 * The format is 0 -> DAY, 1 -> MONTH and 2 -> YEAR.
 	 * 
 	 * @param date
 	 * @return Date byte array

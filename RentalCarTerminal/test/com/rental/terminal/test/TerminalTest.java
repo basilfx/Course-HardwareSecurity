@@ -20,9 +20,9 @@ import com.rental.terminal.CarCommandsHandler;
 import com.rental.terminal.IssuingCommandsHandler;
 import com.rental.terminal.JCUtil;
 import com.rental.terminal.ReceptionCommandsHandler;
-import com.rental.terminal.Smartcard;
 import com.rental.terminal.Terminal;
 import com.rental.terminal.db.Car;
+import com.rental.terminal.db.Smartcard;
 import com.rental.terminal.encryption.RSAHandler;
 
 
@@ -45,20 +45,17 @@ public class TerminalTest {
 		receptionCommands = new ReceptionCommandsHandler(terminal);
 		carCommands = new CarCommandsHandler(terminal);
 		
-		rsaHandler = new RSAHandler();
 		smartcard = new Smartcard();
-		smartcard.setScId(testSC_ID);			
-		RSAPublicKey public_key_sc = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_sc");
-		smartcard.setPublicKey(public_key_sc);
-		RSAPrivateKey private_key_sc = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_sc");
-		smartcard.setPrivateKey(private_key_sc);
+		smartcard.setCardId(testSC_ID);			
+		smartcard.setPublicKeyFromFile("keys/public_key_sc");
+		smartcard.setPrivateKeyFromFile("keys/private_key_sc");
 		
 		issueCommands.issueCard(smartcard);
 		
 		car = new Car();
 		car.setId((short)34);
-		car.setPublicKey("keys/public_key_ct");
-		car.setPrivateKey("keys/private_key_ct");
+		car.setPublicKeyFromFile("keys/public_key_ct");
+		car.setPrivateKeyFromFile("keys/private_key_ct");
 		car.setDate(Calendar.getInstance());
 	}
 
@@ -80,7 +77,7 @@ public class TerminalTest {
 	public void testKeys() throws Exception{
 		byte[] first_pubkey = smartcard.getPublicKey().getEncoded();
 		receptionCommands.initCard(smartcard,car);
-		assertEquals("Check if smart card id matches", testSC_ID, smartcard.getScId());		
+		assertEquals("Check if smart card id matches", testSC_ID, smartcard.getCardId());		
 		assertTrue("Check if pubkey matches", Arrays.equals(first_pubkey, smartcard.getPublicKey().getEncoded()));
 		
 		RSAPublicKey public_key_rt = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_rt");
@@ -91,7 +88,7 @@ public class TerminalTest {
 	
 	@Test
 	public void testSetMileage() throws Exception{
-		receptionCommands.initCard(smartcard,car);
+		receptionCommands.initCard(smartcard, car);
 		int start_mileage = 500;
 		int final_mileage = 1000;
 		carCommands.setMileage(start_mileage);

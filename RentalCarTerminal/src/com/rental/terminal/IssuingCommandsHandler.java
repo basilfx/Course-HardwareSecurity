@@ -10,6 +10,8 @@ import java.util.Arrays;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
+import com.rental.terminal.db.Smartcard;
+
 /**
  * Issuing Terminal application.
  * 
@@ -57,7 +59,7 @@ public class IssuingCommandsHandler extends BaseCommandsHandler{
 		CommandAPDU capdu;
 		
 		// Send the SC id to the SC. IS -> SC : sc_id
-		capdu = new CommandAPDU(CLA_ISSUE, SET_SC_ID, (byte) 0, (byte) 0, JCUtil.shortToBytes(currentSmartcard.getScId()), SCIDSIZE);
+		capdu = new CommandAPDU(CLA_ISSUE, SET_SC_ID, (byte) 0, (byte) 0, JCUtil.shortToBytes(currentSmartcard.getCardId()), SCIDSIZE);
 		ResponseAPDU rapdu = terminal.sendCommandAPDU(capdu);
 		
 		byte[] data = rapdu.getData();
@@ -108,7 +110,7 @@ public class IssuingCommandsHandler extends BaseCommandsHandler{
 		// Ruud: daarna checken we of de ontvangen signature correct is mbv de public_key van de RT, maar de SC kan nooit die signature maken omdat hij de priv_key van de RT
 		//			niet heeft, toch? Of stuurt ie gewoon dezelfde signature nog een keer terug voor verificatie? Ik vind onderstaand een beetje vreemd.
 		// Send signature. IS -> SC : {|sc_id, pubkey_sc|}privkey_rt
-		byte[] mergedData = JCUtil.mergeByteArrays(JCUtil.shortToBytes(currentSmartcard.getScId()), currentSmartcard.getPublicKey().getEncoded());
+		byte[] mergedData = JCUtil.mergeByteArrays(JCUtil.shortToBytes(currentSmartcard.getCardId()), currentSmartcard.getPublicKey().getEncoded());
 		byte[] signature = rsaHandler.sign(private_key_rt, mergedData);
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_SIGNATURE, (byte) 0, (byte) 0, signature, BLOCKSIZE);
 		rapdu = terminal.sendCommandAPDU(capdu);

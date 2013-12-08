@@ -10,8 +10,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
@@ -34,20 +32,23 @@ import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Text;
 
-
 import com.google.common.collect.Lists;
 import com.rental.terminal.BaseCommandsHandler;
 import com.rental.terminal.CarCommandsHandler;
 import com.rental.terminal.IssuingCommandsHandler;
 import com.rental.terminal.ReceptionCommandsHandler;
-import com.rental.terminal.Smartcard;
 import com.rental.terminal.Terminal;
 import com.rental.terminal.db.Car;
 import com.rental.terminal.db.Manager;
-import com.rental.terminal.db.SmartCardDB;
+import com.rental.terminal.db.Smartcard;
 import com.rental.terminal.encryption.RSAHandler;
 
-
+/**
+ * Main window
+ * 
+ * @author Bas Stottelaar
+ * @author Jeroen Senden
+ */
 public class MainWindow {
 	/**
 	 * @var Logger instance
@@ -368,10 +369,10 @@ public class MainWindow {
 			@Override
 			public void handleEvent(Event arg0) {
 				SmartCardDialog dialog = new SmartCardDialog(view.shell);
-				dialog.setSmartCard(new SmartCardDB());
+				dialog.setSmartCard(new Smartcard());
 				
 				if (dialog.open() == 0) {
-					SmartCardDB smartCard = dialog.getSmartCard();
+					Smartcard smartCard = dialog.getSmartCard();
 					
 					// Save to database
 					try {
@@ -395,7 +396,7 @@ public class MainWindow {
 			@Override
 			public void handleEvent(Event arg0) {
 				java.util.List<Integer> smartCardIds = (java.util.List<Integer>) view.setupSmartcard.getData();
-				SmartCardDB smartCard;
+				Smartcard smartCard;
 				
 				// Determine car ID
 				int index = view.setupSmartcard.getSelectionIndex();
@@ -582,7 +583,7 @@ public class MainWindow {
 			public void handleEvent(Event arg0) {
 				// Generate unique ID
 				java.util.List<Integer> smartCardIds = (java.util.List<Integer>) view.setupSmartcard.getData();
-				SmartCardDB smartCard;
+				Smartcard smartCard;
 				
 				// Determine car ID
 				int index = view.setupSmartcard.getSelectionIndex();
@@ -607,7 +608,7 @@ public class MainWindow {
 					RSAPublicKey public_key_sc = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_sc");
 					RSAPrivateKey private_key_sc = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_sc");
 					
-					smartcard.setScId(smartCard.getCardId());			
+					smartcard.setCardId(smartCard.getCardId());			
 					smartcard.setPublicKey(public_key_sc);
 					smartcard.setPrivateKey(private_key_sc);
 					
@@ -639,7 +640,7 @@ public class MainWindow {
 				java.util.List<Integer> carIds = (java.util.List<Integer>) view.deskCars.getData();
 				
 				Car car;
-				SmartCardDB smartCard;
+				Smartcard smartCard;
 				Calendar calendar;
 				Smartcard smartCard2 = new Smartcard();
 				
@@ -668,7 +669,7 @@ public class MainWindow {
 					
 					// Find car
 					car = manager.getCarDao().queryForId(id);
-					smartCard = manager.getSmartCardDao().queryForEq("cardId", smartCard2.getScId()).get(0);
+					smartCard = manager.getSmartCardDao().queryForEq("cardId", smartCard2.getCardId()).get(0);
 					
 					// Update car
 					car.setDate(calendar);
@@ -818,7 +819,7 @@ public class MainWindow {
 	}
 	
 	public void setupSmartCards() {
-		java.util.List<SmartCardDB> smartCards;
+		java.util.List<Smartcard> smartCards;
 		
 		// Query for all
 		try {
@@ -831,7 +832,7 @@ public class MainWindow {
 		// Add to the list
 		java.util.List<Integer> smartCardIds = Lists.newArrayList();
 		
-		for (SmartCardDB smartCard : smartCards) {
+		for (Smartcard smartCard : smartCards) {
 			this.view.setupSmartcard.add(smartCard.getCardId() + "");
 			//this.view.carCars.add(car.getName());
 			smartCardIds.add(smartCard.getId());

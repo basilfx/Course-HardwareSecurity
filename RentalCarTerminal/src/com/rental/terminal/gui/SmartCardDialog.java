@@ -17,8 +17,14 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import com.rental.terminal.db.SmartCardDB;
+import com.rental.terminal.db.Smartcard;
 
+/**
+ * Add/edit smart card dialog
+ * 
+ * @author Bas Stottelaar
+ * @author Jeroen Senden
+ */
 public class SmartCardDialog extends Dialog {
 	private class View {
 		private Shell shell;
@@ -62,7 +68,7 @@ public class SmartCardDialog extends Dialog {
 	}
 	
     private int result;
-    private SmartCardDB smartcard;
+    private Smartcard smartcard;
  
     private View view;
     
@@ -156,11 +162,11 @@ public class SmartCardDialog extends Dialog {
 		});
     }
 
-	public SmartCardDB getSmartCard() {
+	public Smartcard getSmartCard() {
 		return smartcard;
 	}
 
-	public void setSmartCard(SmartCardDB smartcard) {
+	public void setSmartCard(Smartcard smartcard) {
 		this.smartcard = smartcard;
 	}
 }

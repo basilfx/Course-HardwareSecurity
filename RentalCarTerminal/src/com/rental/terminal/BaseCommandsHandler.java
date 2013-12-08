@@ -11,6 +11,7 @@ import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
+import com.rental.terminal.db.Smartcard;
 import com.rental.terminal.encryption.RSAHandler;
 
 
@@ -81,7 +82,7 @@ public class BaseCommandsHandler {
 		JCUtil.log("Card ID has been read by getKeys(): " + Short.toString(JCUtil.bytesToShort(data[0], data[1])));
 		
 		// The first two bytes of the response represent the SC ID.
-		currentSmartcard.setScId(JCUtil.bytesToShort(data[0], data[1]));
+		currentSmartcard.setCardId(JCUtil.bytesToShort(data[0], data[1]));
 		
 		// The second to 130th byte represent the signature.
 		currentSmartcard.setSignature(JCUtil.subArray(data, 2, BLOCKSIZE));

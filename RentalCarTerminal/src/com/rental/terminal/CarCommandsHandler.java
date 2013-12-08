@@ -14,6 +14,7 @@ import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
 import com.rental.terminal.db.Car;
+import com.rental.terminal.db.Smartcard;
 
 
 /**
@@ -143,7 +144,7 @@ public class CarCommandsHandler extends BaseCommandsHandler {
 			terminal.sendCommandAPDU(capdu);
 
 			// Send signature of final mileage and receivedNonce.
-			byte[] signature = rsaHandler.sign(car.getPrivateKeyInstance(), JCUtil.mergeByteArrays(encryptedNonceAndMileage,
+			byte[] signature = rsaHandler.sign(car.getPrivateKey(), JCUtil.mergeByteArrays(encryptedNonceAndMileage,
 					receivedNonce));
 			capdu = new CommandAPDU(CLA_STOP, FINAL_MILEAGE_SIGNATURE, (byte) 0, (byte) 0, signature);
 			terminal.sendCommandAPDU(capdu);
@@ -176,7 +177,7 @@ public class CarCommandsHandler extends BaseCommandsHandler {
 		// byte[] encrypted_mileage = rsaHandler.encrypt(public_key_rt,
 		// JCUtil.mergeByteArrays(bytes_nonce, bytes_mileage));
 		byte[] encrypted_mileage = rsaHandler
-				.encrypt(car.getPrivateKeyInstance(), JCUtil.mergeByteArrays(nonce, bytes_mileage));
+				.encrypt(car.getPrivateKey(), JCUtil.mergeByteArrays(nonce, bytes_mileage));
 		return encrypted_mileage;
 	}
 

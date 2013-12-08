@@ -1,5 +1,9 @@
 package com.rental.terminal.gui;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -18,6 +22,12 @@ import org.eclipse.swt.widgets.Text;
 import com.google.common.base.Strings;
 import com.rental.terminal.db.Car;
 
+/**
+ * Add/edit car dialog
+ * 
+ * @author Bas Stottelaar
+ * @author Jeroen Senden
+ */
 public class CarDialog extends Dialog {
 	
 	private class View {
@@ -126,8 +136,13 @@ public class CarDialog extends Dialog {
 				}
 				
 				CarDialog.this.car.setName(name);
-				CarDialog.this.car.setPublicKey("keys/public_key_ct");
-				CarDialog.this.car.setPrivateKey("keys/private_key_ct");
+				try {
+					CarDialog.this.car.setPublicKeyFromFile("keys/public_key_ct");
+					CarDialog.this.car.setPrivateKeyFromFile("keys/private_key_ct");
+				} catch (Exception e) {
+					e.printStackTrace();
+					return;
+				}
 				
 				// Done
 				CarDialog.this.close();

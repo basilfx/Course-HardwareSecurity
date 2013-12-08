@@ -8,6 +8,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.Calendar;
 
 import com.rental.terminal.db.Car;
+import com.rental.terminal.db.Smartcard;
 import com.rental.terminal.encryption.RSAHandler;
 
 
@@ -63,7 +64,7 @@ public class ProtocolDemo {
 			
 			RSAHandler rsaHandler = new RSAHandler();
 			Smartcard smartcard = new Smartcard();
-			smartcard.setScId(demo.getSmartCartId());			
+			smartcard.setCardId(demo.getSmartCartId());			
 			RSAPublicKey public_key_sc = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_sc");
 			smartcard.setPublicKey(public_key_sc);
 			RSAPrivateKey private_key_sc = rsaHandler.readPrivateKeyFromFileSystem("keys/private_key_sc");
@@ -82,8 +83,8 @@ public class ProtocolDemo {
 			
 			Car car = new Car();
 			car.setId((short)34);
-			car.setPublicKey("keys/public_key_ct");
-			car.setPrivateKey("keys/private_key_ct");
+			car.setPublicKeyFromFile("keys/public_key_ct");
+			car.setPrivateKeyFromFile("keys/private_key_ct");
 			car.setDate(Calendar.getInstance());
 			
 			receptionCommands.initCard(smartcard, car);
