@@ -6,6 +6,8 @@ import org.eclipse.swt.widgets.Shell;
 
 /**
  * Builder for a message box
+ * 
+ * @author Bas Stottelaar
  */
 public class MessageBoxBuilder {
 	private MessageBox messageBox;
