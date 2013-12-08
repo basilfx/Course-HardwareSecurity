@@ -158,7 +158,7 @@ public class MainWindow {
 			Group smartCardSelectGroup = new Group(setupForm, SWT.NONE);
 			smartCardSelectGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 			smartCardSelectGroup.setLayout(new GridLayout(4, false));
-			smartCardSelectGroup.setText("Select smart card");
+			smartCardSelectGroup.setText("Select smartcard");
 		    
 		    // Smartcard selector
 			this.setupSmartcard = new TypedCombo(smartCardSelectGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
@@ -383,7 +383,7 @@ public class MainWindow {
 			}
 		});
 		
-		// Add smart card button
+		// Add smartcard button
 		this.view.setupAddSmartcard.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
@@ -402,13 +402,13 @@ public class MainWindow {
 					}
 					
 					// Update GUI
-					view.addLogItem("Added smart card with ID " + smartCard.getId());
+					view.addLogItem("Added smartcard with ID " + smartCard.getId());
 					view.setupSmartcard.add(smartCard);
 				}
 			}
 		});
 		
-		// Edit smart card button
+		// Edit smartcard button
 		this.view.setupEditSmartcard.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
@@ -431,14 +431,14 @@ public class MainWindow {
 						}
 						
 						// Update GUI
-						view.addLogItem("Edited smart card " + smartCard);
+						view.addLogItem("Edited smartcard " + smartCard);
 						view.setupSmartcard.setItem(index, smartCard);
 					}
 				}
 			}
 		});
 		
-		// Delete smart card button
+		// Delete smartcard button
 		this.view.setupDeleteSmartcard.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
@@ -453,7 +453,7 @@ public class MainWindow {
 					}
 	
 					// Update GUI
-					view.addLogItem("Deleted smart card " + smartcard);
+					view.addLogItem("Deleted smartcard " + smartcard);
 					view.setupSmartcard.remove(smartcard);
 				}
 			}
@@ -573,7 +573,7 @@ public class MainWindow {
 				
 					// Make sure smartcard is selected
 					if (smartcard == null) {
-						view.addLogItem("No smart card selected");
+						view.addLogItem("No smartcard selected");
 					}
 					
 					// Issue card
@@ -612,6 +612,12 @@ public class MainWindow {
 						return;
 					}
 					
+					// Make sure card reader is connected
+					if (!terminal.isCardPresent()) {
+						view.addLogItem("No card present");
+						return;
+					}
+					
 					// Parse data
 					try {
 						SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
@@ -622,11 +628,11 @@ public class MainWindow {
 						return;
 					}
 					
-					// Read smart card ID
+					// Read smartcard ID
 					try {
 						new BaseCommandsHandler(terminal).getKeys(smartcard);	
 						
-						// Read ID into object, then read smart card from DB
+						// Read ID into object, then read smartcard from DB
 						try {
 							smartcard = manager.getSmartCardDao().queryForEq("cardId", smartcard.getCardId()).get(0);
 						} catch (ArrayIndexOutOfBoundsException e) {
@@ -659,8 +665,21 @@ public class MainWindow {
 		this.view.deskRead.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
-				// TODO Auto-generated method stub
+				view.deskRead.setEnabled(false);
 				
+				try {
+					// Make sure card reader is connected
+					if (!terminal.isCardPresent()) {
+						view.addLogItem("No card present");
+						return;
+					}
+					
+				} finally {
+					view.deskRead.setEnabled(true);
+				}
+				
+				// Done
+				view.addLogItem("Card read");
 			}
 		});
 		
@@ -670,17 +689,26 @@ public class MainWindow {
 			public void handleEvent(Event arg0) {
 				view.deskReset.setEnabled(false);
 				
-				// Reset card
 				try {
-					new ReceptionCommandsHandler(terminal).reset();
+					// Make sure card reader is connected
+					if (!terminal.isCardPresent()) {
+						view.addLogItem("No card present");
+						return;
+					}
 					
-					view.addLogItem("Card reset succesfully");
-				} catch (Exception e) {
-					view.addLogItem("Card reset failed");
-					LOGGER.log(Level.SEVERE, "Exception", e);
+					// Reset card
+					try {
+						new ReceptionCommandsHandler(terminal).reset();
+					} catch (Exception e) {
+						view.addLogItem("Card reset failed");
+						LOGGER.log(Level.SEVERE, "Exception", e);
+					}
+				} finally {				
+					view.deskReset.setEnabled(true);
 				}
 				
-				view.deskReset.setEnabled(true);
+				// Done
+				view.addLogItem("Card reset succesfully");
 			}
 		});
 		
@@ -711,31 +739,43 @@ public class MainWindow {
 				view.carStart.setEnabled(false);
 				
 				try {
-					CarCommandsHandler carCommands = new CarCommandsHandler(terminal);
-					Car car = view.carCars.getSelected();
-					
-					if (car != null) {
-						carCommands.startCar(car);
-						
-						// Update info
-						car.setStarts(car.getStarts() + 1);
-						
-						if (car.getStarts() == 1) {
-							car.setStartMileage(car.getStartMileage());
-						}
-						
-						view.carMileage.setText("Current mileage: " + car.getMileage());
-						
-						// Store in database;
-						manager.getCarDao().update(car);
+					// Make sure card reader is connected
+					if (!terminal.isCardPresent()) {
+						view.addLogItem("No card present");
+						return;
 					}
-				} catch (Exception e) {
-					view.addLogItem("Failed starting car");
 					
-					LOGGER.log(Level.SEVERE, "Exception", e);
+					try {
+						CarCommandsHandler carCommands = new CarCommandsHandler(terminal);
+						Car car = view.carCars.getSelected();
+						
+						if (car != null) {
+							carCommands.startCar(car);
+							
+							// Update info
+							car.setStarts(car.getStarts() + 1);
+							
+							if (car.getStarts() == 1) {
+								car.setStartMileage(car.getStartMileage());
+							}
+							
+							view.carMileage.setText("Current mileage: " + car.getMileage());
+							
+							// Store in database;
+							manager.getCarDao().update(car);
+						}
+					} catch (Exception e) {
+						view.addLogItem("Failed starting car");
+						LOGGER.log(Level.SEVERE, "Exception", e);
+						
+						return;
+					}
+				} finally {
+					view.carStart.setEnabled(true);
 				}
 				
-				view.carStart.setEnabled(true);
+				// Done
+				view.addLogItem("Car started");
 			}
 		});
 		
@@ -746,22 +786,35 @@ public class MainWindow {
 				view.carStop.setEnabled(false);
 				
 				try {
-					CarCommandsHandler carCommands = new CarCommandsHandler(terminal);
-					Car car = view.carCars.getSelected();
-					
-					if (car != null) {
-						carCommands.setMileage(car.getMileage());
-						carCommands.stopCar(car);
-
-						view.carMileage.setText("Current mileage: --");
+					// Make sure card reader is connected
+					if (!terminal.isCardPresent()) {
+						view.addLogItem("No card present");
+						return;
 					}
-				} catch (Exception e) {
-					view.addLogItem("Failed stopping car");
 					
-					LOGGER.log(Level.SEVERE, "Exception", e);
+					try {
+						Car car = view.carCars.getSelected();
+						
+						if (car != null) {
+							CarCommandsHandler carCommands = new CarCommandsHandler(terminal);
+							
+							carCommands.setMileage(car.getMileage());
+							carCommands.stopCar(car);
+	
+							view.carMileage.setText("Current mileage: --");
+						}
+					} catch (Exception e) {
+						view.addLogItem("Failed stopping car");
+						LOGGER.log(Level.SEVERE, "Exception", e);
+						
+						return;
+					}
+				} finally {
+					view.carStop.setEnabled(true);
 				}
 				
-				view.carStop.setEnabled(true);
+				// Done
+				view.addLogItem("Car stopped");
 			}
 		});
 		
@@ -772,23 +825,33 @@ public class MainWindow {
 				view.carDrive.setEnabled(false);
 				
 				try {
-					Car car = view.carCars.getSelected();
-					
-					if (car != null) {
-						car.setMileage(car.getMileage() + 10);
-						manager.getCarDao().update(car);
-						
-						view.carMileage.setText("Current mileage: " + car.getMileage());
-						
-						view.addLogItem("Increaded mileage");
+					// Make sure card reader is connected
+					if (!terminal.isCardPresent()) {
+						view.addLogItem("No card present");
+						return;
 					}
-				} catch (Exception e) {
-					view.addLogItem("Failed increasing mileage");
 					
-					LOGGER.log(Level.SEVERE, "Exception", e);
+					try {
+						Car car = view.carCars.getSelected();
+						
+						if (car != null) {
+							car.setMileage(car.getMileage() + 10);
+							manager.getCarDao().update(car);
+							
+							view.carMileage.setText("Current mileage: " + car.getMileage());			
+						}
+					} catch (Exception e) {
+						view.addLogItem("Failed increasing mileage");
+						LOGGER.log(Level.SEVERE, "Exception", e);
+						
+						return;
+					}
+				} finally {
+					view.carDrive.setEnabled(true);
 				}
 				
-				view.carDrive.setEnabled(true);
+				// Done
+				view.addLogItem("Increaded mileage");
 			}
 		});
 	}
@@ -796,6 +859,7 @@ public class MainWindow {
 	public void setupSmartCards() {
 		try {
 			this.view.setupSmartcard.setItems(this.manager.getSmartCardDao().queryForAll());
+			this.view.addLogItem("Smartcards loaded");
 		} catch (SQLException e) {
 			LOGGER.log(Level.SEVERE, "Exception", e);
 			return;
@@ -808,6 +872,8 @@ public class MainWindow {
 			
 			this.view.carCars.setItems(cars);
 			this.view.deskCars.setItems(cars);
+			
+			this.view.addLogItem("Cars loaded");
 		} catch (SQLException e) {
 			LOGGER.log(Level.SEVERE, "Exception", e);
 			return;
@@ -821,6 +887,7 @@ public class MainWindow {
 		// Setup the Database
 		try {
 			this.manager = new Manager();
+			
 		} catch (SQLException e) {
 			LOGGER.log(Level.SEVERE, "Exception", e);
 			return;
@@ -835,9 +902,6 @@ public class MainWindow {
 			return;
 		}
 		
-		// Setup the view
-		this.view = new View();
-		
 		this.setupButtons();
 		this.setupSmartCards();
 		this.setupCars();
@@ -846,7 +910,7 @@ public class MainWindow {
 		this.view.setStatus("Not connected");
 		this.view.addLogItem("Application started");
 		
-		// Add timer for smart card status polling
+		// Add timer for smartcard status polling
 		this.view.display.timerExec(500, new Runnable() {
 			@Override
 			public void run() {
