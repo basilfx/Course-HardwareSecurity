@@ -198,6 +198,9 @@ public class CarCommandsHandler extends BaseCommandsHandler {
 	 * @throws CarTerminalInvalidDateException
 	 */
 	byte[] checkCarData(Car car, byte[] nonce_and_car_data) throws CarTerminalInvalidCarIdException, CarTerminalInvalidDateException {
+		short decrypted_car_id;
+		Calendar expirationDate;
+		
 		try {			
 			// Check the decrypted data.
 			byte[] nonce = CardUtils.subArray(nonce_and_car_data, 0, NONCESIZE);
@@ -207,27 +210,27 @@ public class CarCommandsHandler extends BaseCommandsHandler {
 			// Decrypt encrypted car data.
 			byte[] data = rsaHandler.decrypt(public_key_rt, car_data);
 
-			short decrypted_car_id = CardUtils.bytesToShort(data[0], data[1]);
-			Calendar expirationDate = CardUtils.bytesToDate(CardUtils.subArray(data, 2, 3));
+			decrypted_car_id = CardUtils.bytesToShort(data[0], data[1]);
+			expirationDate = CardUtils.bytesToDate(CardUtils.subArray(data, 2, 3));
 			
 			System.out.println("car ID from terminal: " + car.getId());
 			System.out.println("car ID from SC: " + decrypted_car_id);
 			System.out.println("car expiration date: " + expirationDate);
-
-			// Check whether the decrypted car ID matches the ID of this car.
-			if (car.getId() != decrypted_car_id) {
-				throw new CarTerminalInvalidCarIdException();
-			}
-			// Check whether the received expiration date is before today.
-			else if (expirationDate.before(Calendar.getInstance())) {
-				throw new CarTerminalInvalidDateException();
-			}
-			
-			return nonce;
 		} catch (Exception e) {
 			e.printStackTrace();
+			return null;
 		}
-		return null;
+		
+		// Check whether the decrypted car ID matches the ID of this car.
+		if (car.getId() != decrypted_car_id) {
+			throw new CarTerminalInvalidCarIdException();
+		}
+		// Check whether the received expiration date is before today.
+		else if (expirationDate.before(Calendar.getInstance())) {
+			throw new CarTerminalInvalidDateException();
+		}
+		
+		return nonce;
 	}
 
 	public int getMileage() {
