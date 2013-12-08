@@ -1,4 +1,4 @@
-package com.rental.terminal;
+package com.rental.terminal.commands;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -11,6 +11,8 @@ import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
+import com.rental.terminal.CardUtils;
+import com.rental.terminal.Terminal;
 import com.rental.terminal.db.Smartcard;
 import com.rental.terminal.encryption.RSAHandler;
 
@@ -79,31 +81,31 @@ public class BaseCommandsHandler {
 		
 		byte[] data = rapdu.getData();
 		
-		JCUtil.log("Card ID has been read by getKeys(): " + Short.toString(JCUtil.bytesToShort(data[0], data[1])));
+		CardUtils.log("Card ID has been read by getKeys(): " + Short.toString(CardUtils.bytesToShort(data[0], data[1])));
 		
 		// The first two bytes of the response represent the SC ID.
-		currentSmartcard.setCardId(JCUtil.bytesToShort(data[0], data[1]));
+		currentSmartcard.setCardId(CardUtils.bytesToShort(data[0], data[1]));
 		
 		// The second to 130th byte represent the signature.
-		currentSmartcard.setSignature(JCUtil.subArray(data, 2, BLOCKSIZE));
+		currentSmartcard.setSignature(CardUtils.subArray(data, 2, BLOCKSIZE));
 		
 
 		capdu = new CommandAPDU(CLA_KEYS, GET_PUBLIC_KEY_MODULUS, (byte) 0, (byte) 0, BLOCKSIZE);
 		rapdu = terminal.sendCommandAPDU(capdu);
 		byte[] modulus = rapdu.getData();
-		JCUtil.log("received pubkey_sc modulus: " + new String(modulus));
+		CardUtils.log("received pubkey_sc modulus: " + new String(modulus));
 
 		// TODO: Note that the expected response is hard-coded. It would be better to first obtain the exponent length from the SC.
 		capdu = new CommandAPDU(CLA_KEYS, GET_PUBLIC_KEY_EXPONENT, (byte) 0, (byte) 0, (short) 3);
 		rapdu = terminal.sendCommandAPDU(capdu);
 		byte[] exponent = rapdu.getData();
 		
-		JCUtil.log("received pubkey_sc exponent: " + new String(exponent));
+		CardUtils.log("received pubkey_sc exponent: " + new String(exponent));
 		
 		// Because the SC sends unsigned byte arrays, we convert them to signed byte arrays for the BigInteger conversion.
-		currentSmartcard.setPublicKey(rsaHandler.getPublicKeyFromModulusExponent(JCUtil.unsignedToSigned(modulus), JCUtil.unsignedToSigned(exponent)));
+		currentSmartcard.setPublicKey(rsaHandler.getPublicKeyFromModulusExponent(CardUtils.unsignedToSigned(modulus), CardUtils.unsignedToSigned(exponent)));
 		
-		JCUtil.log("pubkey_sc has been read by getKeys(). Modulus: " + currentSmartcard.getPublicKey().getModulus().toString() + ", exponent: " + currentSmartcard.getPublicKey().getPublicExponent().toString());
+		CardUtils.log("pubkey_sc has been read by getKeys(). Modulus: " + currentSmartcard.getPublicKey().getModulus().toString() + ", exponent: " + currentSmartcard.getPublicKey().getPublicExponent().toString());
 	}
 	
 	/**

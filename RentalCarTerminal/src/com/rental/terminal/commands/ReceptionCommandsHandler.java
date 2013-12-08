@@ -1,4 +1,4 @@
-package com.rental.terminal;
+package com.rental.terminal.commands;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -14,6 +14,8 @@ import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
+import com.rental.terminal.CardUtils;
+import com.rental.terminal.Terminal;
 import com.rental.terminal.db.Car;
 import com.rental.terminal.db.Smartcard;
 import com.rental.terminal.encryption.RSAHandler;
@@ -91,10 +93,10 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			byte[] data = rapdu.getData();
 			if (Arrays.equals(nonce, data)) {
 				// The nonces match: the SC is now authenticated to the RT.
-				JCUtil.log("The nonces match! The SC is now authenticated to the RT.");
+				CardUtils.log("The nonces match! The SC is now authenticated to the RT.");
 			} else {
 				// Nonce mismatch! Abort.
-				JCUtil.log("ERROR! The nonces do not match! The SC has not been authenticated to the RT.");
+				CardUtils.log("ERROR! The nonces do not match! The SC has not been authenticated to the RT.");
 				
 				throw new TerminalNonceMismatchException("Nonce mismatch");
 			}
@@ -110,15 +112,15 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			
 			
 			// RT -> SC: {|pubkey_ct|}privkey_rt			
-			byte[] car_public_key_modulus = JCUtil.getBytes(car.getPublicKey().getModulus());
+			byte[] car_public_key_modulus = CardUtils.getBytes(car.getPublicKey().getModulus());
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_CAR_KEY_MODULUS, (byte) 0, (byte) 0, car_public_key_modulus);
 			terminal.sendCommandAPDU(capdu);
 			
-			byte[] car_public_key_exponent = JCUtil.getBytes(car.getPublicKey().getPublicExponent());
+			byte[] car_public_key_exponent = CardUtils.getBytes(car.getPublicKey().getPublicExponent());
 			capdu = new CommandAPDU(CLA_INIT, INIT_SET_CAR_KEY_EXPONENT, (byte) 0, (byte) 0, car_public_key_exponent);
 			terminal.sendCommandAPDU(capdu);
 			
-			byte[] car_public_key = JCUtil.mergeByteArrays(car_public_key_modulus, car_public_key_exponent);
+			byte[] car_public_key = CardUtils.mergeByteArrays(car_public_key_modulus, car_public_key_exponent);
 			byte[] signature = rsaHandler.sign(private_key_rt, car_public_key);
 			capdu = new CommandAPDU(CLA_INIT, INIT_CHECK_CAR_KEY_SIGNATURE, (byte) 0, (byte) 0, signature);
 			terminal.sendCommandAPDU(capdu);
@@ -132,7 +134,7 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			capdu = new CommandAPDU(CLA_INIT, INIT_CHECK_MEM_AVAILABLE, (byte) 0, (byte) 0, (short) 2);
 			rapdu = terminal.sendCommandAPDU(capdu);
 			byte[] mem_available_array = rapdu.getData();
-			short mem_available = JCUtil.bytesToShort(mem_available_array[0], mem_available_array[1]);
+			short mem_available = CardUtils.bytesToShort(mem_available_array[0], mem_available_array[1]);
 			
 			System.out.println("Memory available (persistent): " + mem_available);
 			
@@ -165,10 +167,10 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 
 			if (Arrays.equals(nonce, data)){
 				// The nonces match. The SC is now authenticated to the RT. 
-				JCUtil.log("The nonces match! The SC is now authenticated to the RT.");
+				CardUtils.log("The nonces match! The SC is now authenticated to the RT.");
 			} else {
 				// Nonce mismatch! Abort.
-				JCUtil.log("ERROR! The nonces do not match! The SC has not been authenticated to the RT.");
+				CardUtils.log("ERROR! The nonces do not match! The SC has not been authenticated to the RT.");
 				
 				throw new TerminalNonceMismatchException("Nonce mismatch");
 			}
@@ -178,14 +180,14 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 			data = rapdu.getData();
 			int start_mileage = verifyAndReturnMileage(car, data);
 			car.setStartMileage(start_mileage);
-			JCUtil.log("start mileage: " + start_mileage);
+			CardUtils.log("start mileage: " + start_mileage);
 			
 			capdu = new CommandAPDU(CLA_READ, READ_MILEAGE_FINAL_MILEAGE, (byte) 0, (byte) 0, BLOCKSIZE);
 			rapdu = terminal.sendCommandAPDU(capdu);
 			data = rapdu.getData();
 			int final_mileage = verifyAndReturnMileage(car, data);
 			car.setMileage(final_mileage);
-			JCUtil.log("final mileage: " + final_mileage);
+			CardUtils.log("final mileage: " + final_mileage);
 			
 		} catch (Exception e) {
 			throw new CardException(e.getMessage());
@@ -209,9 +211,9 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 	private int verifyAndReturnMileage(Car car, byte[] data) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeySpecException{
 		byte[] decrypted_data = rsaHandler.decrypt(car.getPublicKey(),data);
 		
-		byte[] nonce = JCUtil.subArray(decrypted_data, 0, NONCESIZE);
-		byte[] mileage = JCUtil.subArray(decrypted_data, NONCESIZE, MILEAGESIZE);
-		return JCUtil.bytesToInt(mileage);
+		byte[] nonce = CardUtils.subArray(decrypted_data, 0, NONCESIZE);
+		byte[] mileage = CardUtils.subArray(decrypted_data, NONCESIZE, MILEAGESIZE);
+		return CardUtils.bytesToInt(mileage);
 	}
 
 	/**
@@ -241,7 +243,7 @@ public class ReceptionCommandsHandler extends BaseCommandsHandler {
 	 * @throws BadPaddingException
 	 */
 	private byte[] getEncryptedCarData(Car car) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{	
-		byte[] car_data = JCUtil.mergeByteArrays(JCUtil.shortToBytes((short) car.getId()), JCUtil.dateToBytes(car.getDate()));
+		byte[] car_data = CardUtils.mergeByteArrays(CardUtils.shortToBytes((short) car.getId()), CardUtils.dateToBytes(car.getDate()));
 		return rsaHandler.encrypt(private_key_rt, car_data);
 	}
 		

@@ -25,7 +25,7 @@ import com.rental.terminal.db.Smartcard;
  * @author Bas Stottelaar
  * @author Jeroen Senden
  */
-public class SmartCardDialog extends Dialog {
+public class SmartcardDialog extends BaseDialog {
 	private class View {
 		private Shell shell;
 		private Button ok;
@@ -67,49 +67,32 @@ public class SmartCardDialog extends Dialog {
 		}
 	}
 	
-    private int result;
     private Smartcard smartcard;
  
     private View view;
-    
 
-    public SmartCardDialog(Shell parent, int style) {
-        super(parent, style);
-    }
-
-    public SmartCardDialog(Shell parent) {
-        this(parent, SWT.NONE);
+    public SmartcardDialog(Shell parent) {
+        super(parent);
     }
 
-    public int open() {
-    	// Default is canceled
-        this.result = 1;
-        
-        this.view = new View(getParent());
-        
-        this.setupForm();
-        this.setupButtons();
-        
-        this.view.shell.open();
-        this.view.shell.layout();
-        
-        Display display = getParent().getDisplay();
-        
-        while (!this.view.shell.isDisposed()) {
-            if (!display.readAndDispatch()) {
-                display.sleep();
-            }
-        }
-        
-        // Return dialog result
-        return this.result;
-    }
-    
-    public void close() {
-    	SmartCardDialog.this.view.shell.close();
-    	SmartCardDialog.this.view.shell.dispose();
-    	
-    }
+	public Smartcard getSmartCard() {
+		return smartcard;
+	}
+
+	public void setSmartCard(Smartcard smartcard) {
+		this.smartcard = smartcard;
+	}
+
+	@Override
+	public Shell getShell() {
+		return this.view.shell;
+	}
+
+	@Override
+	public void setup() {
+		this.setupForm();
+		this.setupButtons();
+	}
     
     public void setupForm() {
     	this.view.cardId.setText(this.smartcard.getCardId() + "");
@@ -128,13 +111,13 @@ public class SmartCardDialog extends Dialog {
     	this.view.ok.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
-				SmartCardDialog.this.result = 0;
+				SmartcardDialog.this.result = 0;
 				Short cardId;
 				
 				try {
-					cardId = Short.parseShort(SmartCardDialog.this.view.cardId.getText());
+					cardId = Short.parseShort(SmartcardDialog.this.view.cardId.getText());
 				} catch (NumberFormatException e) {
-					MessageBox message = new MessageBox(SmartCardDialog.this.view.shell);
+					MessageBox message = new MessageBox(SmartcardDialog.this.view.shell);
 					
 					message.setMessage("Card ID missing or not a number");
 					message.setText("Validation error");
@@ -147,26 +130,18 @@ public class SmartCardDialog extends Dialog {
 				smartcard.setCardId(cardId);
 				
 				// Done
-				SmartCardDialog.this.close();
+				SmartcardDialog.this.close();
 			}
 		});
     	
     	this.view.cancel.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
-				SmartCardDialog.this.result = 1;
+				SmartcardDialog.this.result = 1;
 				
 				// Done
-				SmartCardDialog.this.close();
+				SmartcardDialog.this.close();
 			}
 		});
     }
-
-	public Smartcard getSmartCard() {
-		return smartcard;
-	}
-
-	public void setSmartCard(Smartcard smartcard) {
-		this.smartcard = smartcard;
-	}
 }

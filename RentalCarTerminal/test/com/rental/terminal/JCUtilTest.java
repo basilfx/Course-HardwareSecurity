@@ -1,4 +1,4 @@
-package com.rental.terminal.test;
+package com.rental.terminal;
 
 
 import static org.junit.Assert.assertEquals;
@@ -11,7 +11,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.rental.terminal.JCUtil;
+import com.rental.terminal.CardUtils;
 
 
 public class JCUtilTest {
@@ -35,42 +35,42 @@ public class JCUtilTest {
 	
 	@Test
 	public void testBytesToShortCorrect(){
-		assertEquals("Bytes To short test correct",short_test, JCUtil.bytesToShort(short_first, short_second));
+		assertEquals("Bytes To short test correct",short_test, CardUtils.bytesToShort(short_first, short_second));
 	}
 	
 	@Test
 	public void testBytesToShortIncorrect(){
-		assertFalse("Bytes To short test incorrect",JCUtil.bytesToShort(short_first, short_second) == (short_test+1));
+		assertFalse("Bytes To short test incorrect",CardUtils.bytesToShort(short_first, short_second) == (short_test+1));
 	}
 	
 	@Test
 	public void testShortToBytesCorrect(){
-		byte[] bytes = JCUtil.shortToBytes(short_test);
+		byte[] bytes = CardUtils.shortToBytes(short_test);
 		assertEquals("Short To bytes correct, first byte", short_first, bytes[0]);
 		assertEquals("Short To bytes correct, second byte", short_second, bytes[1]);
 	}
 	
 	@Test
 	public void testShortToBytesIncorrect(){
-		byte[] bytes = JCUtil.shortToBytes(short_test);
+		byte[] bytes = CardUtils.shortToBytes(short_test);
 		assertFalse("Short To bytes incorrect, first byte", short_first == bytes[1]);
 		assertFalse("Short To bytes incorrect, second byte", short_second == bytes[0]);
 	}
 	
 	@Test
 	public void testIntToBytesCorrect(){
-		assertTrue("Int to Bytes test correct", Arrays.equals(int_test_bytes, JCUtil.intToBytes(int_test)));
+		assertTrue("Int to Bytes test correct", Arrays.equals(int_test_bytes, CardUtils.intToBytes(int_test)));
 	}
 	
 	@Test
 	public void testBytesToIntCorrect(){
-		assertEquals("Short To bytes correct, second byte", int_test, JCUtil.bytesToInt(int_test_bytes));
+		assertEquals("Short To bytes correct, second byte", int_test, CardUtils.bytesToInt(int_test_bytes));
 	}	
 	
 	@Test
 	public void testMergeCorrect(){
 		String string = "random";
-		byte[] test1 = JCUtil.mergeByteArrays(testData, string.getBytes());
+		byte[] test1 = CardUtils.mergeByteArrays(testData, string.getBytes());
 		byte[] test2 = (testString + string).getBytes();
 		assertTrue("Test merge arrays correct", Arrays.equals(test1, test2));
 	}
@@ -78,7 +78,7 @@ public class JCUtilTest {
 	@Test
 	public void testMergeIncorrect(){
 		String string = "random";
-		byte[] test1 = JCUtil.mergeByteArrays(testData, string.getBytes());
+		byte[] test1 = CardUtils.mergeByteArrays(testData, string.getBytes());
 		assertFalse("Test merge arrays correct", Arrays.equals(test1, testString.getBytes()));
 	}	
 	

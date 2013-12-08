@@ -1,4 +1,4 @@
-package com.rental.terminal.test;
+package com.rental.terminal;
 
 
 import static org.junit.Assert.assertEquals;
@@ -16,11 +16,11 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.rental.terminal.CarCommandsHandler;
-import com.rental.terminal.IssuingCommandsHandler;
-import com.rental.terminal.JCUtil;
-import com.rental.terminal.ReceptionCommandsHandler;
+import com.rental.terminal.CardUtils;
 import com.rental.terminal.Terminal;
+import com.rental.terminal.commands.CarCommandsHandler;
+import com.rental.terminal.commands.IssuingCommandsHandler;
+import com.rental.terminal.commands.ReceptionCommandsHandler;
 import com.rental.terminal.db.Car;
 import com.rental.terminal.db.Smartcard;
 import com.rental.terminal.encryption.RSAHandler;
@@ -81,7 +81,7 @@ public class TerminalTest {
 		assertTrue("Check if pubkey matches", Arrays.equals(first_pubkey, smartcard.getPublicKey().getEncoded()));
 		
 		RSAPublicKey public_key_rt = rsaHandler.readPublicKeyFromFileSystem("keys/public_key_rt");
-		byte[] data = JCUtil.mergeByteArrays(JCUtil.shortToBytes(testSC_ID), smartcard.getPublicKey().getEncoded());
+		byte[] data = CardUtils.mergeByteArrays(CardUtils.shortToBytes(testSC_ID), smartcard.getPublicKey().getEncoded());
 		boolean result = rsaHandler.verify(public_key_rt, data, smartcard.getSignature());
 		assertTrue("validate signature", result);
 	}

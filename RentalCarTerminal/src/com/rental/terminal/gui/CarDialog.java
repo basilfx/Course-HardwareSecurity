@@ -28,7 +28,7 @@ import com.rental.terminal.db.Car;
  * @author Bas Stottelaar
  * @author Jeroen Senden
  */
-public class CarDialog extends Dialog {
+public class CarDialog extends BaseDialog {
 	
 	private class View {
 		private Shell shell;
@@ -67,48 +67,31 @@ public class CarDialog extends Dialog {
 		}
 	}
 	
-    private int result;
     private Car car;
  
     private View view;
     
-
-    public CarDialog(Shell parent, int style) {
-        super(parent, style);
-    }
-
     public CarDialog(Shell parent) {
-        this(parent, SWT.NONE);
-    }
-
-    public int open() {
-    	// Default is canceled
-        this.result = 1;
-        
-        this.view = new View(getParent());
-        
-        this.setupForm();
-        this.setupButtons();
-        
-        this.view.shell.open();
-        this.view.shell.layout();
-        
-        Display display = getParent().getDisplay();
-        
-        while (!this.view.shell.isDisposed()) {
-            if (!display.readAndDispatch()) {
-                display.sleep();
-            }
-        }
-        
-        // Return dialog result
-        return this.result;
-    }
+		super(parent);
+	}
     
-    public void close() {
-    	CarDialog.this.view.shell.close();
-    	CarDialog.this.view.shell.dispose();
-    	
+    public Car getCar() {
+		return car;
+	}
+
+	public void setCar(Car car) {
+		this.car = car;
+	}
+
+	@Override
+	public Shell getShell() {
+		return this.view.shell;
+	}
+	
+	@Override
+    public void setup() {
+    	this.setupForm();
+    	this.setupButtons();
     }
     
     public void setupForm() {
@@ -159,12 +142,4 @@ public class CarDialog extends Dialog {
 			}
 		});
     }
-
-	public Car getCar() {
-		return car;
-	}
-
-	public void setCar(Car car) {
-		this.car = car;
-	}
 }

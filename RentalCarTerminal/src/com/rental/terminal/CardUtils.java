@@ -19,7 +19,7 @@ import com.rental.terminal.encryption.RSAHandler;
  * @author Erwin Middelesch
  * @author Bas Stottelaar
  */
-public class JCUtil {
+public class CardUtils {
 	
 	/**
 	 * Gets an unsigned byte array representation of <code>big</code>. A leading

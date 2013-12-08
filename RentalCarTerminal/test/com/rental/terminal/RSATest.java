@@ -1,4 +1,4 @@
-package com.rental.terminal.test;
+package com.rental.terminal;
 
 
 import static org.junit.Assert.assertFalse;

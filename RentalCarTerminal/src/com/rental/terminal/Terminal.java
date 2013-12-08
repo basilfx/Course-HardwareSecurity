@@ -11,6 +11,7 @@ import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 import javax.smartcardio.TerminalFactory;
 
+
 /**
  * Base class for the Terminal applications.
  * 
@@ -58,7 +59,7 @@ public class Terminal {
 				List<CardTerminal> cs = ct.list(CardTerminals.State.CARD_PRESENT);
 
 				if (cs.isEmpty()) {
-					JCUtil.log("No terminals with a card found.");
+					CardUtils.log("No terminals with a card found.");
 					return;
 				}
 
@@ -83,27 +84,27 @@ public class Terminal {
 
 										break;
 									} catch (Exception e) {
-										JCUtil.log("Card does not contain applet!");
+										CardUtils.log("Card does not contain applet!");
 										sleep(2000);
 										continue;
 									}
 								} catch (CardException e) {
-									JCUtil.log("Couldn't connect to card!");
+									CardUtils.log("Couldn't connect to card!");
 									sleep(2000);
 									continue;
 								}
 							} else {
-								JCUtil.log("No card present!");
+								CardUtils.log("No card present!");
 								sleep(2000);
 								continue;
 							}
 						}
 					} catch (CardException e) {
-						JCUtil.log("Card status problem!");
+						CardUtils.log("Card status problem!");
 					}
 				}
 			} catch (Exception e) {
-				JCUtil.log("ERROR: " + e.getMessage());
+				CardUtils.log("ERROR: " + e.getMessage());
 				e.printStackTrace();
 			}
 		}
@@ -125,9 +126,6 @@ public class Terminal {
 		return false;
 	}
 
-	
-
-	
 	/**
 	 * Sends a command to the card.
 	 * 
@@ -139,10 +137,10 @@ public class Terminal {
 	 * @throws CardTerminalException
 	 *             if something goes wrong.
 	 */
-	protected ResponseAPDU sendCommandAPDU(CommandAPDU capdu) throws CardException {
-		JCUtil.log(capdu);
+	public ResponseAPDU sendCommandAPDU(CommandAPDU capdu) throws CardException {
+		CardUtils.log(capdu);
 		ResponseAPDU rapdu = applet.transmit(capdu);
-		JCUtil.log(rapdu);
+		CardUtils.log(rapdu);
 
 		return rapdu;
 	}

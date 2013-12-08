@@ -1,6 +1,3 @@
-/*
- * $Id: RentalCarApplet.java,v 0.1 2013/11/15 13:37:07$
- */
 package applet;
 
 import javacard.framework.APDU;
@@ -20,9 +17,8 @@ import javacardx.crypto.Cipher;
 /**
  * Class RentalCarApplet.
  * 
- * @author Group ?
- * 
- * @version $Revision: 0.1 $
+ * @author Erwin Middelesch
+ * @author Jelte Orij
  */
 public class RentalCarApplet extends Applet implements ISO7816 {
 	private static final byte STATE_INIT = 0;

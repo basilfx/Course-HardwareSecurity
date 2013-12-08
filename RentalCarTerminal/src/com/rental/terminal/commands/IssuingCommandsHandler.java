@@ -1,4 +1,4 @@
-package com.rental.terminal;
+package com.rental.terminal.commands;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -10,6 +10,8 @@ import java.util.Arrays;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
+import com.rental.terminal.CardUtils;
+import com.rental.terminal.Terminal;
 import com.rental.terminal.db.Smartcard;
 
 /**
@@ -59,11 +61,11 @@ public class IssuingCommandsHandler extends BaseCommandsHandler{
 		CommandAPDU capdu;
 		
 		// Send the SC id to the SC. IS -> SC : sc_id
-		capdu = new CommandAPDU(CLA_ISSUE, SET_SC_ID, (byte) 0, (byte) 0, JCUtil.shortToBytes(currentSmartcard.getCardId()), SCIDSIZE);
+		capdu = new CommandAPDU(CLA_ISSUE, SET_SC_ID, (byte) 0, (byte) 0, CardUtils.shortToBytes(currentSmartcard.getCardId()), SCIDSIZE);
 		ResponseAPDU rapdu = terminal.sendCommandAPDU(capdu);
 		
 		byte[] data = rapdu.getData();
-		JCUtil.log("Card ID has been set to: " + Short.toString(JCUtil.bytesToShort(data[0], data[1])));
+		CardUtils.log("Card ID has been set to: " + Short.toString(CardUtils.bytesToShort(data[0], data[1])));
 		
 		// Send the random seed to the SC. IS -> SC : random_data_seed
 		SecureRandom random = new SecureRandom();
@@ -73,35 +75,35 @@ public class IssuingCommandsHandler extends BaseCommandsHandler{
 		terminal.sendCommandAPDU(capdu);
 		
 		// Send the public key of the SC to the SC. IS -> SC : pubkey_sc
-		byte[] modulus = JCUtil.getBytes(currentSmartcard.getPublicKey().getModulus());
+		byte[] modulus = CardUtils.getBytes(currentSmartcard.getPublicKey().getModulus());
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_MODULUS_SC, (byte) 0, (byte) 0, modulus, modulus.length);
 		rapdu = terminal.sendCommandAPDU(capdu);
 		
 		byte[] modulusResponse = rapdu.getData();
 		
 		if (Arrays.equals(modulus, modulusResponse)) {
-			JCUtil.log("received pubkey_sc modulus: " + new String(modulusResponse));
-			JCUtil.log("pubkey_sc modulus has been set to: " + currentSmartcard.getPublicKey().getModulus().toString());
+			CardUtils.log("received pubkey_sc modulus: " + new String(modulusResponse));
+			CardUtils.log("pubkey_sc modulus has been set to: " + currentSmartcard.getPublicKey().getModulus().toString());
 		}
 		else {
-			JCUtil.log("pubkey_sc modulus has NOT CORRECTLY BEEN SET!");
-			JCUtil.log("sent pubkey_sc modulus: " + new String(modulus));
-			JCUtil.log("received pubkey_sc modulus: " + new String(modulusResponse));
+			CardUtils.log("pubkey_sc modulus has NOT CORRECTLY BEEN SET!");
+			CardUtils.log("sent pubkey_sc modulus: " + new String(modulus));
+			CardUtils.log("received pubkey_sc modulus: " + new String(modulusResponse));
 		}
 		
-		byte[] exponent = JCUtil.getBytes(currentSmartcard.getPublicKey().getPublicExponent());
+		byte[] exponent = CardUtils.getBytes(currentSmartcard.getPublicKey().getPublicExponent());
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_EXPONENT_SC, (byte) 0, (byte) 0, exponent, exponent.length);
 		rapdu = terminal.sendCommandAPDU(capdu);
 		
 		byte[] exponentResponse = rapdu.getData();
 		if (Arrays.equals(exponent, exponentResponse)) {
-			JCUtil.log("received pubkey_sc exponent: " + new String(exponentResponse));
-			JCUtil.log("pubkey_sc exponent has been set to: " + currentSmartcard.getPublicKey().getPublicExponent().toString());
+			CardUtils.log("received pubkey_sc exponent: " + new String(exponentResponse));
+			CardUtils.log("pubkey_sc exponent has been set to: " + currentSmartcard.getPublicKey().getPublicExponent().toString());
 		}
 		else {
-			JCUtil.log("pubkey_sc exponent has NOT CORRECTLY BEEN SET!");
-			JCUtil.log("sent pubkey_sc exponent: " + new String(exponent));
-			JCUtil.log("received pubkey_sc exponent: " + new String(exponentResponse));
+			CardUtils.log("pubkey_sc exponent has NOT CORRECTLY BEEN SET!");
+			CardUtils.log("sent pubkey_sc exponent: " + new String(exponent));
+			CardUtils.log("received pubkey_sc exponent: " + new String(exponentResponse));
 		}
 		
 		
@@ -110,35 +112,35 @@ public class IssuingCommandsHandler extends BaseCommandsHandler{
 		// Ruud: daarna checken we of de ontvangen signature correct is mbv de public_key van de RT, maar de SC kan nooit die signature maken omdat hij de priv_key van de RT
 		//			niet heeft, toch? Of stuurt ie gewoon dezelfde signature nog een keer terug voor verificatie? Ik vind onderstaand een beetje vreemd.
 		// Send signature. IS -> SC : {|sc_id, pubkey_sc|}privkey_rt
-		byte[] mergedData = JCUtil.mergeByteArrays(JCUtil.shortToBytes(currentSmartcard.getCardId()), currentSmartcard.getPublicKey().getEncoded());
+		byte[] mergedData = CardUtils.mergeByteArrays(CardUtils.shortToBytes(currentSmartcard.getCardId()), currentSmartcard.getPublicKey().getEncoded());
 		byte[] signature = rsaHandler.sign(private_key_rt, mergedData);
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_SIGNATURE, (byte) 0, (byte) 0, signature, BLOCKSIZE);
 		rapdu = terminal.sendCommandAPDU(capdu);
 		
 		byte[] responseSignature = rapdu.getData();
 		
-		JCUtil.log("Sent signature: " + new String(signature));
-		JCUtil.log("Retrieved signature: " + new String(responseSignature));
+		CardUtils.log("Sent signature: " + new String(signature));
+		CardUtils.log("Retrieved signature: " + new String(responseSignature));
 		
 		boolean verified = rsaHandler.verify(public_key_rt, mergedData, responseSignature);
-		JCUtil.log("Has the signature correctly been set? : " + Boolean.toString(verified));
+		CardUtils.log("Has the signature correctly been set? : " + Boolean.toString(verified));
 		
 		// Send the private key of the SC to the SC. IS -> SC : IS -> SC : privkey_sc
-		modulus = JCUtil.getBytes(currentSmartcard.getPrivateKey().getModulus());
+		modulus = CardUtils.getBytes(currentSmartcard.getPrivateKey().getModulus());
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PRVATE_KEY_MODULUS_SC, (byte) 0, (byte) 0, modulus);
 		terminal.sendCommandAPDU(capdu);
 				
-		exponent = JCUtil.getBytes(currentSmartcard.getPrivateKey().getPrivateExponent());
+		exponent = CardUtils.getBytes(currentSmartcard.getPrivateKey().getPrivateExponent());
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PRIVATE_KEY_EXPONENT_SC, (byte) 0, (byte) 0, exponent);
 		terminal.sendCommandAPDU(capdu);
 		
 		
 		// Send the public key of the RT to the SC. IS -> SC : pubkey_rt
-		modulus = JCUtil.getBytes(public_key_rt.getModulus());
+		modulus = CardUtils.getBytes(public_key_rt.getModulus());
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_MODULUS_RT, (byte) 0, (byte) 0, modulus);
 		terminal.sendCommandAPDU(capdu);		
 		
-		exponent = JCUtil.getBytes(public_key_rt.getPublicExponent());
+		exponent = CardUtils.getBytes(public_key_rt.getPublicExponent());
 		capdu = new CommandAPDU(CLA_ISSUE, SET_PUBLIC_KEY_EXPONENT_RT, (byte) 0, (byte) 0, exponent);
 		terminal.sendCommandAPDU(capdu);
 	}

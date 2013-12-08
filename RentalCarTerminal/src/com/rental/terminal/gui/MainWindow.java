@@ -33,11 +33,11 @@ import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Text;
 
 import com.google.common.collect.Lists;
-import com.rental.terminal.BaseCommandsHandler;
-import com.rental.terminal.CarCommandsHandler;
-import com.rental.terminal.IssuingCommandsHandler;
-import com.rental.terminal.ReceptionCommandsHandler;
 import com.rental.terminal.Terminal;
+import com.rental.terminal.commands.BaseCommandsHandler;
+import com.rental.terminal.commands.CarCommandsHandler;
+import com.rental.terminal.commands.IssuingCommandsHandler;
+import com.rental.terminal.commands.ReceptionCommandsHandler;
 import com.rental.terminal.db.Car;
 import com.rental.terminal.db.Manager;
 import com.rental.terminal.db.Smartcard;
@@ -368,7 +368,7 @@ public class MainWindow {
 		this.view.setupAddSmartcard.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event arg0) {
-				SmartCardDialog dialog = new SmartCardDialog(view.shell);
+				SmartcardDialog dialog = new SmartcardDialog(view.shell);
 				dialog.setSmartCard(new Smartcard());
 				
 				if (dialog.open() == 0) {
@@ -416,7 +416,7 @@ public class MainWindow {
 				}
 				
 				// Display dialog
-				SmartCardDialog dialog = new SmartCardDialog(view.shell);
+				SmartcardDialog dialog = new SmartcardDialog(view.shell);
 				dialog.setSmartCard(smartCard);
 				
 				if (dialog.open() == 0) {
