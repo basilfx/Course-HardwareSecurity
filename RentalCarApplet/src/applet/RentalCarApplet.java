@@ -433,10 +433,10 @@ public class RentalCarApplet extends Applet implements ISO7816 {
 
 		case INIT_SET_SIGNED_ENCRYPTED_CAR_DATA:
 			// Make sure that the terminal has been authenticated.
-			//if (terminal_authenticated[0] == 0x01) {
+			if (terminal_authenticated[0] == 0x01) {
 				// Store the car data.
 				readBuffer(apdu, car_data, (short) 0, BLOCKSIZE);
-			//}
+			}
 			break;
 		case INIT_CHECK_MEM_AVAILABLE:
 			// Check available persistent memory.

@@ -5,6 +5,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
+import java.util.Calendar;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -211,14 +212,14 @@ public class CarCommandsHandler extends BaseCommandsHandler {
 
 			System.out.println("car ID from terminal: " + car.getId());
 			System.out.println("car ID from SC: " + decrypted_car_id);
-			
+			Calendar expirationDate = Calendar.getInstance();
+			expirationDate.set(year, month, day);
 			// Check whether the decrypted car ID matches the ID of this car.
 			if (car.getId() != decrypted_car_id) {
 				throw new CarTerminalInvalidCarIdException();
 			}
-			// Check whether the received expiration date is today or in the future.
-			else if (day == 3 && month == 11 && year == 13) {
-				//<= Calendar.DAY_OF_MONTH || month != Calendar.MONTH + 1 || year != Calendar.YEAR
+			// Check whether the received expiration date is before today.
+			else if (expirationDate.before(Calendar.getInstance())) {
 				throw new CarTerminalInvalidDateException();
 			}
 			
