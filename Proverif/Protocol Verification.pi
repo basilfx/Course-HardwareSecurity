@@ -1,3 +1,5 @@
+(* Author: Ruud Verbij *)
+
 free net, net2, RT, SC, CT, init, start, stopcar, readme, unwanted.
 
 private free caridanddate, secret.
